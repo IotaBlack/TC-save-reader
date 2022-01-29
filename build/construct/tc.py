@@ -1,33 +1,42 @@
 from construct import *
 from construct.lib import *
 
+tc__point = Struct(
+	'x' / Int16sl,
+	'y' / Int16sl,
+)
+
 tc__string = Struct(
 	'len' / Int64ul,
 	'content' / FixedSized(this.len, GreedyString(encoding='utf8')),
 )
 
-tc__point = Struct(
-	'x' / Int8sb,
-	'y' / Int8sb,
+tc__circuit_path = Struct(
+	'start' / LazyBound(lambda: tc__point),
+	'body' / RepeatUntil(lambda obj_, list_, this: obj_.length == 0, LazyBound(lambda: tc__circuit_segment)),
+)
+
+tc__circuit_segment = Struct(
+	'direction' / ???,
+	'length' / ???,
+)
+
+tc__circuit = Struct(
+	'permanent_id' / Int64ul,
+	'kind' / tc__circuit_kind(Int8ub),
+	'color' / Int8ub,
+	'comment' / LazyBound(lambda: tc__string),
+	'path' / LazyBound(lambda: tc__circuit_path),
 )
 
 tc__component = Struct(
 	'kind' / tc__component_kind(Int16ul),
 	'position' / LazyBound(lambda: tc__point),
 	'rotation' / Int8ub,
-	'permanent_id' / Int32ul,
+	'permanent_id' / Int64ul,
 	'custom_string' / LazyBound(lambda: tc__string),
 	'program_name' / If( (( ((this.kind.value > 63) and (this.kind.value < 69)) ) or (this.kind.value == 94)) , LazyBound(lambda: tc__string)),
 	'custom_id' / If(this.kind.value == 92, Int64ul),
-)
-
-tc__circuit = Struct(
-	'permanent_id' / Int32ul,
-	'kind' / tc__circuit_kind(Int8ub),
-	'color' / Int8ub,
-	'comment' / LazyBound(lambda: tc__string),
-	'path_length' / Int64ul,
-	'path' / Array(this.path_length, LazyBound(lambda: tc__point)),
 )
 
 def tc__circuit_kind(subcon):
@@ -52,8 +61,8 @@ def tc__component_kind(subcon):
 		nor=10,
 		xor=11,
 		xnor=12,
-		counter=13,
-		virtualcounter=14,
+		bytecounter=13,
+		virtualbytecounter=14,
 		qwordcounter=15,
 		virtualqwordcounter=16,
 		ram=17,
@@ -71,9 +80,9 @@ def tc__component_kind(subcon):
 		qwordregister=29,
 		virtualqwordregister=30,
 		byteswitch=31,
-		mux=32,
-		demux=33,
-		biggerdemux=34,
+		bytemux=32,
+		decoder1=33,
+		decoder3=34,
 		byteconstant=35,
 		bytenot=36,
 		byteor=37,
@@ -83,8 +92,8 @@ def tc__component_kind(subcon):
 		bytelessu=41,
 		bytelessi=42,
 		byteneg=43,
-		byteadd2=44,
-		bytemul2=45,
+		byteadd=44,
+		bytemul=45,
 		bytesplitter=46,
 		bytemaker=47,
 		qwordsplitter=48,
@@ -98,8 +107,8 @@ def tc__component_kind(subcon):
 		waveformgenerator=56,
 		httpclient=57,
 		asciiscreen=58,
-		keyboard=59,
-		fileinput=60,
+		keypad=59,
+		filerom=60,
 		halt=61,
 		circuitcluster=62,
 		screen=63,
@@ -133,10 +142,29 @@ def tc__component_kind(subcon):
 		inputoutput=91,
 		custom=92,
 		virtualcustom=93,
-		byteless=94,
-		byteadd=95,
-		bytemul=96,
-		flipflop=97,
+		qwordprogram=94,
+		delaybuffer=95,
+		virtualdelaybuffer=96,
+		console=97,
+		byteshl=98,
+		byteshr=99,
+		qwordconstant=100,
+		qwordnot=101,
+		qwordor=102,
+		qwordand=103,
+		qwordxor=104,
+		qwordneg=105,
+		qwordadd=106,
+		qwordmul=107,
+		qwordequal=108,
+		qwordlessu=109,
+		qwordlessi=110,
+		qwordshl=111,
+		qwordshr=112,
+		qwordmux=113,
+		qwordswitch=114,
+		statebit=115,
+		statebyte=116,
 	)
 
 tc = Struct(
@@ -146,10 +174,13 @@ tc = Struct(
 	'delay' / Int32ul,
 	'custom_visible' / Int8ub,
 	'clock_speed' / Int32ul,
-	'scale_level' / Int8ub,
+	'nesting_level' / Int8ub,
 	'dependcy_count' / Int64ul,
 	'dependecies' / Array(this.dependcy_count, Int64ul),
 	'description' / LazyBound(lambda: tc__string),
+	'unpacked' / Int8ub,
+	'camera_position' / LazyBound(lambda: tc__point),
+	'cached_design' / Int8ub,
 	'component_count' / Int64ul,
 	'components' / Array(this.component_count, LazyBound(lambda: tc__component)),
 	'circuit_count' / Int64ul,

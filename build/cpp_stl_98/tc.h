@@ -14,10 +14,12 @@
 class tc_t : public kaitai::kstruct {
 
 public:
-    class string_t;
     class point_t;
-    class component_t;
+    class string_t;
+    class circuit_path_t;
+    class circuit_segment_t;
     class circuit_t;
+    class component_t;
 
     enum circuit_kind_t {
         CIRCUIT_KIND_CK_BIT = 0,
@@ -39,8 +41,8 @@ public:
         COMPONENT_KIND_NOR = 10,
         COMPONENT_KIND_XOR = 11,
         COMPONENT_KIND_XNOR = 12,
-        COMPONENT_KIND_COUNTER = 13,
-        COMPONENT_KIND_VIRTUALCOUNTER = 14,
+        COMPONENT_KIND_BYTECOUNTER = 13,
+        COMPONENT_KIND_VIRTUALBYTECOUNTER = 14,
         COMPONENT_KIND_QWORDCOUNTER = 15,
         COMPONENT_KIND_VIRTUALQWORDCOUNTER = 16,
         COMPONENT_KIND_RAM = 17,
@@ -58,9 +60,9 @@ public:
         COMPONENT_KIND_QWORDREGISTER = 29,
         COMPONENT_KIND_VIRTUALQWORDREGISTER = 30,
         COMPONENT_KIND_BYTESWITCH = 31,
-        COMPONENT_KIND_MUX = 32,
-        COMPONENT_KIND_DEMUX = 33,
-        COMPONENT_KIND_BIGGERDEMUX = 34,
+        COMPONENT_KIND_BYTEMUX = 32,
+        COMPONENT_KIND_DECODER1 = 33,
+        COMPONENT_KIND_DECODER3 = 34,
         COMPONENT_KIND_BYTECONSTANT = 35,
         COMPONENT_KIND_BYTENOT = 36,
         COMPONENT_KIND_BYTEOR = 37,
@@ -70,8 +72,8 @@ public:
         COMPONENT_KIND_BYTELESSU = 41,
         COMPONENT_KIND_BYTELESSI = 42,
         COMPONENT_KIND_BYTENEG = 43,
-        COMPONENT_KIND_BYTEADD2 = 44,
-        COMPONENT_KIND_BYTEMUL2 = 45,
+        COMPONENT_KIND_BYTEADD = 44,
+        COMPONENT_KIND_BYTEMUL = 45,
         COMPONENT_KIND_BYTESPLITTER = 46,
         COMPONENT_KIND_BYTEMAKER = 47,
         COMPONENT_KIND_QWORDSPLITTER = 48,
@@ -85,8 +87,8 @@ public:
         COMPONENT_KIND_WAVEFORMGENERATOR = 56,
         COMPONENT_KIND_HTTPCLIENT = 57,
         COMPONENT_KIND_ASCIISCREEN = 58,
-        COMPONENT_KIND_KEYBOARD = 59,
-        COMPONENT_KIND_FILEINPUT = 60,
+        COMPONENT_KIND_KEYPAD = 59,
+        COMPONENT_KIND_FILEROM = 60,
         COMPONENT_KIND_HALT = 61,
         COMPONENT_KIND_CIRCUITCLUSTER = 62,
         COMPONENT_KIND_SCREEN = 63,
@@ -120,10 +122,29 @@ public:
         COMPONENT_KIND_INPUTOUTPUT = 91,
         COMPONENT_KIND_CUSTOM = 92,
         COMPONENT_KIND_VIRTUALCUSTOM = 93,
-        COMPONENT_KIND_BYTELESS = 94,
-        COMPONENT_KIND_BYTEADD = 95,
-        COMPONENT_KIND_BYTEMUL = 96,
-        COMPONENT_KIND_FLIPFLOP = 97
+        COMPONENT_KIND_QWORDPROGRAM = 94,
+        COMPONENT_KIND_DELAYBUFFER = 95,
+        COMPONENT_KIND_VIRTUALDELAYBUFFER = 96,
+        COMPONENT_KIND_CONSOLE = 97,
+        COMPONENT_KIND_BYTESHL = 98,
+        COMPONENT_KIND_BYTESHR = 99,
+        COMPONENT_KIND_QWORDCONSTANT = 100,
+        COMPONENT_KIND_QWORDNOT = 101,
+        COMPONENT_KIND_QWORDOR = 102,
+        COMPONENT_KIND_QWORDAND = 103,
+        COMPONENT_KIND_QWORDXOR = 104,
+        COMPONENT_KIND_QWORDNEG = 105,
+        COMPONENT_KIND_QWORDADD = 106,
+        COMPONENT_KIND_QWORDMUL = 107,
+        COMPONENT_KIND_QWORDEQUAL = 108,
+        COMPONENT_KIND_QWORDLESSU = 109,
+        COMPONENT_KIND_QWORDLESSI = 110,
+        COMPONENT_KIND_QWORDSHL = 111,
+        COMPONENT_KIND_QWORDSHR = 112,
+        COMPONENT_KIND_QWORDMUX = 113,
+        COMPONENT_KIND_QWORDSWITCH = 114,
+        COMPONENT_KIND_STATEBIT = 115,
+        COMPONENT_KIND_STATEBYTE = 116
     };
 
     tc_t(kaitai::kstream* p__io, kaitai::kstruct* p__parent = 0, tc_t* p__root = 0);
@@ -134,6 +155,32 @@ private:
 
 public:
     ~tc_t();
+
+    class point_t : public kaitai::kstruct {
+
+    public:
+
+        point_t(kaitai::kstream* p__io, kaitai::kstruct* p__parent = 0, tc_t* p__root = 0);
+
+    private:
+        void _read();
+        void _clean_up();
+
+    public:
+        ~point_t();
+
+    private:
+        int16_t m_x;
+        int16_t m_y;
+        tc_t* m__root;
+        kaitai::kstruct* m__parent;
+
+    public:
+        int16_t x() const { return m_x; }
+        int16_t y() const { return m_y; }
+        tc_t* _root() const { return m__root; }
+        kaitai::kstruct* _parent() const { return m__parent; }
+    };
 
     class string_t : public kaitai::kstruct {
 
@@ -161,30 +208,88 @@ public:
         kaitai::kstruct* _parent() const { return m__parent; }
     };
 
-    class point_t : public kaitai::kstruct {
+    class circuit_path_t : public kaitai::kstruct {
 
     public:
 
-        point_t(kaitai::kstream* p__io, kaitai::kstruct* p__parent = 0, tc_t* p__root = 0);
+        circuit_path_t(kaitai::kstream* p__io, tc_t::circuit_t* p__parent = 0, tc_t* p__root = 0);
 
     private:
         void _read();
         void _clean_up();
 
     public:
-        ~point_t();
+        ~circuit_path_t();
 
     private:
-        int8_t m_x;
-        int8_t m_y;
+        point_t* m_start;
+        std::vector<circuit_segment_t*>* m_body;
         tc_t* m__root;
-        kaitai::kstruct* m__parent;
+        tc_t::circuit_t* m__parent;
 
     public:
-        int8_t x() const { return m_x; }
-        int8_t y() const { return m_y; }
+        point_t* start() const { return m_start; }
+        std::vector<circuit_segment_t*>* body() const { return m_body; }
         tc_t* _root() const { return m__root; }
-        kaitai::kstruct* _parent() const { return m__parent; }
+        tc_t::circuit_t* _parent() const { return m__parent; }
+    };
+
+    class circuit_segment_t : public kaitai::kstruct {
+
+    public:
+
+        circuit_segment_t(kaitai::kstream* p__io, tc_t::circuit_path_t* p__parent = 0, tc_t* p__root = 0);
+
+    private:
+        void _read();
+        void _clean_up();
+
+    public:
+        ~circuit_segment_t();
+
+    private:
+        uint64_t m_direction;
+        uint64_t m_length;
+        tc_t* m__root;
+        tc_t::circuit_path_t* m__parent;
+
+    public:
+        uint64_t direction() const { return m_direction; }
+        uint64_t length() const { return m_length; }
+        tc_t* _root() const { return m__root; }
+        tc_t::circuit_path_t* _parent() const { return m__parent; }
+    };
+
+    class circuit_t : public kaitai::kstruct {
+
+    public:
+
+        circuit_t(kaitai::kstream* p__io, tc_t* p__parent = 0, tc_t* p__root = 0);
+
+    private:
+        void _read();
+        void _clean_up();
+
+    public:
+        ~circuit_t();
+
+    private:
+        uint64_t m_permanent_id;
+        circuit_kind_t m_kind;
+        uint8_t m_color;
+        string_t* m_comment;
+        circuit_path_t* m_path;
+        tc_t* m__root;
+        tc_t* m__parent;
+
+    public:
+        uint64_t permanent_id() const { return m_permanent_id; }
+        circuit_kind_t kind() const { return m_kind; }
+        uint8_t color() const { return m_color; }
+        string_t* comment() const { return m_comment; }
+        circuit_path_t* path() const { return m_path; }
+        tc_t* _root() const { return m__root; }
+        tc_t* _parent() const { return m__parent; }
     };
 
     class component_t : public kaitai::kstruct {
@@ -204,7 +309,7 @@ public:
         component_kind_t m_kind;
         point_t* m_position;
         uint8_t m_rotation;
-        uint32_t m_permanent_id;
+        uint64_t m_permanent_id;
         string_t* m_custom_string;
         string_t* m_program_name;
         bool n_program_name;
@@ -227,44 +332,10 @@ public:
         component_kind_t kind() const { return m_kind; }
         point_t* position() const { return m_position; }
         uint8_t rotation() const { return m_rotation; }
-        uint32_t permanent_id() const { return m_permanent_id; }
+        uint64_t permanent_id() const { return m_permanent_id; }
         string_t* custom_string() const { return m_custom_string; }
         string_t* program_name() const { return m_program_name; }
         uint64_t custom_id() const { return m_custom_id; }
-        tc_t* _root() const { return m__root; }
-        tc_t* _parent() const { return m__parent; }
-    };
-
-    class circuit_t : public kaitai::kstruct {
-
-    public:
-
-        circuit_t(kaitai::kstream* p__io, tc_t* p__parent = 0, tc_t* p__root = 0);
-
-    private:
-        void _read();
-        void _clean_up();
-
-    public:
-        ~circuit_t();
-
-    private:
-        uint32_t m_permanent_id;
-        circuit_kind_t m_kind;
-        uint8_t m_color;
-        string_t* m_comment;
-        uint64_t m_path_length;
-        std::vector<point_t*>* m_path;
-        tc_t* m__root;
-        tc_t* m__parent;
-
-    public:
-        uint32_t permanent_id() const { return m_permanent_id; }
-        circuit_kind_t kind() const { return m_kind; }
-        uint8_t color() const { return m_color; }
-        string_t* comment() const { return m_comment; }
-        uint64_t path_length() const { return m_path_length; }
-        std::vector<point_t*>* path() const { return m_path; }
         tc_t* _root() const { return m__root; }
         tc_t* _parent() const { return m__parent; }
     };
@@ -276,10 +347,13 @@ private:
     uint32_t m_delay;
     uint8_t m_custom_visible;
     uint32_t m_clock_speed;
-    uint8_t m_scale_level;
+    uint8_t m_nesting_level;
     uint64_t m_dependcy_count;
     std::vector<uint64_t>* m_dependecies;
     string_t* m_description;
+    uint8_t m_unpacked;
+    point_t* m_camera_position;
+    uint8_t m_cached_design;
     uint64_t m_component_count;
     std::vector<component_t*>* m_components;
     uint64_t m_circuit_count;
@@ -294,10 +368,13 @@ public:
     uint32_t delay() const { return m_delay; }
     uint8_t custom_visible() const { return m_custom_visible; }
     uint32_t clock_speed() const { return m_clock_speed; }
-    uint8_t scale_level() const { return m_scale_level; }
+    uint8_t nesting_level() const { return m_nesting_level; }
     uint64_t dependcy_count() const { return m_dependcy_count; }
     std::vector<uint64_t>* dependecies() const { return m_dependecies; }
     string_t* description() const { return m_description; }
+    uint8_t unpacked() const { return m_unpacked; }
+    point_t* camera_position() const { return m_camera_position; }
+    uint8_t cached_design() const { return m_cached_design; }
     uint64_t component_count() const { return m_component_count; }
     std::vector<component_t*>* components() const { return m_components; }
     uint64_t circuit_count() const { return m_circuit_count; }

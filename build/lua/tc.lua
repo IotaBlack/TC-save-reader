@@ -29,8 +29,8 @@ Tc.ComponentKind = enum.Enum {
   nor = 10,
   xor = 11,
   xnor = 12,
-  counter = 13,
-  virtualcounter = 14,
+  bytecounter = 13,
+  virtualbytecounter = 14,
   qwordcounter = 15,
   virtualqwordcounter = 16,
   ram = 17,
@@ -48,9 +48,9 @@ Tc.ComponentKind = enum.Enum {
   qwordregister = 29,
   virtualqwordregister = 30,
   byteswitch = 31,
-  mux = 32,
-  demux = 33,
-  biggerdemux = 34,
+  bytemux = 32,
+  decoder1 = 33,
+  decoder3 = 34,
   byteconstant = 35,
   bytenot = 36,
   byteor = 37,
@@ -60,8 +60,8 @@ Tc.ComponentKind = enum.Enum {
   bytelessu = 41,
   bytelessi = 42,
   byteneg = 43,
-  byteadd2 = 44,
-  bytemul2 = 45,
+  byteadd = 44,
+  bytemul = 45,
   bytesplitter = 46,
   bytemaker = 47,
   qwordsplitter = 48,
@@ -75,8 +75,8 @@ Tc.ComponentKind = enum.Enum {
   waveformgenerator = 56,
   httpclient = 57,
   asciiscreen = 58,
-  keyboard = 59,
-  fileinput = 60,
+  keypad = 59,
+  filerom = 60,
   halt = 61,
   circuitcluster = 62,
   screen = 63,
@@ -110,10 +110,29 @@ Tc.ComponentKind = enum.Enum {
   inputoutput = 91,
   custom = 92,
   virtualcustom = 93,
-  byteless = 94,
-  byteadd = 95,
-  bytemul = 96,
-  flipflop = 97,
+  qwordprogram = 94,
+  delaybuffer = 95,
+  virtualdelaybuffer = 96,
+  console = 97,
+  byteshl = 98,
+  byteshr = 99,
+  qwordconstant = 100,
+  qwordnot = 101,
+  qwordor = 102,
+  qwordand = 103,
+  qwordxor = 104,
+  qwordneg = 105,
+  qwordadd = 106,
+  qwordmul = 107,
+  qwordequal = 108,
+  qwordlessu = 109,
+  qwordlessi = 110,
+  qwordshl = 111,
+  qwordshr = 112,
+  qwordmux = 113,
+  qwordswitch = 114,
+  statebit = 115,
+  statebyte = 116,
 }
 
 function Tc:_init(io, parent, root)
@@ -125,21 +144,24 @@ end
 
 function Tc:_read()
   self.magic = self._io:read_bytes(1)
-  if not(self.magic == "\000") then
-    error("not equal, expected " ..  "\000" .. ", but got " .. self.magic)
+  if not(self.magic == "\001") then
+    error("not equal, expected " ..  "\001" .. ", but got " .. self.magic)
   end
   self.save_version = self._io:read_s8le()
   self.nand = self._io:read_u4le()
   self.delay = self._io:read_u4le()
   self.custom_visible = self._io:read_u1()
   self.clock_speed = self._io:read_u4le()
-  self.scale_level = self._io:read_u1()
+  self.nesting_level = self._io:read_u1()
   self.dependcy_count = self._io:read_u8le()
   self.dependecies = {}
   for i = 0, self.dependcy_count - 1 do
     self.dependecies[i + 1] = self._io:read_u8le()
   end
   self.description = Tc.String(self._io, self, self._root)
+  self.unpacked = self._io:read_u1()
+  self.camera_position = Tc.Point(self._io, self, self._root)
+  self.cached_design = self._io:read_u1()
   self.component_count = self._io:read_u8le()
   self.components = {}
   for i = 0, self.component_count - 1 do
@@ -150,6 +172,21 @@ function Tc:_read()
   for i = 0, self.circuit_count - 1 do
     self.circuits[i + 1] = Tc.Circuit(self._io, self, self._root)
   end
+end
+
+
+Tc.Point = class.class(KaitaiStruct)
+
+function Tc.Point:_init(io, parent, root)
+  KaitaiStruct._init(self, io)
+  self._parent = parent
+  self._root = root or self
+  self:_read()
+end
+
+function Tc.Point:_read()
+  self.x = self._io:read_s2le()
+  self.y = self._io:read_s2le()
 end
 
 
@@ -168,64 +205,84 @@ function Tc.String:_read()
 end
 
 
-Tc.Point = class.class(KaitaiStruct)
+Tc.CircuitPath = class.class(KaitaiStruct)
 
-function Tc.Point:_init(io, parent, root)
+function Tc.CircuitPath:_init(io, parent, root)
   KaitaiStruct._init(self, io)
   self._parent = parent
   self._root = root or self
   self:_read()
 end
 
-function Tc.Point:_read()
-  self.x = self._io:read_s1()
-  self.y = self._io:read_s1()
+function Tc.CircuitPath:_read()
+  self.start = Tc.Point(self._io, self, self._root)
+  self.body = {}
+  local i = 0
+  while true do
+    _ = Tc.CircuitSegment(self._io, self, self._root)
+    self.body[i + 1] = _
+    if _.length == 0 then
+      break
+    end
+    i = i + 1
+  end
 end
 
 
-Tc.Component = class.class(KaitaiStruct)
+Tc.CircuitSegment = class.class(KaitaiStruct)
 
-function Tc.Component:_init(io, parent, root)
-  KaitaiStruct._init(self, io)
-  self._parent = parent
-  self._root = root or self
-  self:_read()
+function Tc.CircuitSegment:_init(io, parent, root)
+KaitaiStruct._init(self, io)
+self._parent = parent
+self._root = root or self
+self:_read()
 end
 
-function Tc.Component:_read()
-  self.kind = Tc.ComponentKind(self._io:read_u2le())
-  self.position = Tc.Point(self._io, self, self._root)
-  self.rotation = self._io:read_u1()
-  self.permanent_id = self._io:read_u4le()
-  self.custom_string = Tc.String(self._io, self, self._root)
-  if  (( ((self.kind.value > 63) and (self.kind.value < 69)) ) or (self.kind.value == 94))  then
-    self.program_name = Tc.String(self._io, self, self._root)
-  end
-  if self.kind.value == 92 then
-    self.custom_id = self._io:read_u8le()
-  end
+function Tc.CircuitSegment:_read()
+self.direction = self._io:read_bits_int_be(3)
+self.length = self._io:read_bits_int_be(5)
 end
 
 
 Tc.Circuit = class.class(KaitaiStruct)
 
 function Tc.Circuit:_init(io, parent, root)
-  KaitaiStruct._init(self, io)
-  self._parent = parent
-  self._root = root or self
-  self:_read()
+KaitaiStruct._init(self, io)
+self._parent = parent
+self._root = root or self
+self:_read()
 end
 
 function Tc.Circuit:_read()
-  self.permanent_id = self._io:read_u4le()
-  self.kind = Tc.CircuitKind(self._io:read_u1())
-  self.color = self._io:read_u1()
-  self.comment = Tc.String(self._io, self, self._root)
-  self.path_length = self._io:read_u8le()
-  self.path = {}
-  for i = 0, self.path_length - 1 do
-    self.path[i + 1] = Tc.Point(self._io, self, self._root)
-  end
+self.permanent_id = self._io:read_u8le()
+self.kind = Tc.CircuitKind(self._io:read_u1())
+self.color = self._io:read_u1()
+self.comment = Tc.String(self._io, self, self._root)
+self.path = Tc.CircuitPath(self._io, self, self._root)
+end
+
+
+Tc.Component = class.class(KaitaiStruct)
+
+function Tc.Component:_init(io, parent, root)
+KaitaiStruct._init(self, io)
+self._parent = parent
+self._root = root or self
+self:_read()
+end
+
+function Tc.Component:_read()
+self.kind = Tc.ComponentKind(self._io:read_u2le())
+self.position = Tc.Point(self._io, self, self._root)
+self.rotation = self._io:read_u1()
+self.permanent_id = self._io:read_u8le()
+self.custom_string = Tc.String(self._io, self, self._root)
+if  (( ((self.kind.value > 63) and (self.kind.value < 69)) ) or (self.kind.value == 94))  then
+  self.program_name = Tc.String(self._io, self, self._root)
+end
+if self.kind.value == 92 then
+  self.custom_id = self._io:read_u8le()
+end
 end
 
 

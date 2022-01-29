@@ -9,10 +9,13 @@ type
     `delay`*: uint32
     `customVisible`*: uint8
     `clockSpeed`*: uint32
-    `scaleLevel`*: uint8
+    `nestingLevel`*: uint8
     `dependcyCount`*: uint64
     `dependecies`*: seq[uint64]
     `description`*: Tc_String
+    `unpacked`*: uint8
+    `cameraPosition`*: Tc_Point
+    `cachedDesign`*: uint8
     `componentCount`*: uint64
     `components`*: seq[Tc_Component]
     `circuitCount`*: uint64
@@ -36,8 +39,8 @@ type
     nor = 10
     xor = 11
     xnor = 12
-    counter = 13
-    virtualcounter = 14
+    bytecounter = 13
+    virtualbytecounter = 14
     qwordcounter = 15
     virtualqwordcounter = 16
     ram = 17
@@ -55,9 +58,9 @@ type
     qwordregister = 29
     virtualqwordregister = 30
     byteswitch = 31
-    mux = 32
-    demux = 33
-    biggerdemux = 34
+    bytemux = 32
+    decoder1 = 33
+    decoder3 = 34
     byteconstant = 35
     bytenot = 36
     byteor = 37
@@ -67,8 +70,8 @@ type
     bytelessu = 41
     bytelessi = 42
     byteneg = 43
-    byteadd2 = 44
-    bytemul2 = 45
+    byteadd = 44
+    bytemul = 45
     bytesplitter = 46
     bytemaker = 47
     qwordsplitter = 48
@@ -82,8 +85,8 @@ type
     waveformgenerator = 56
     httpclient = 57
     asciiscreen = 58
-    keyboard = 59
-    fileinput = 60
+    keypad = 59
+    filerom = 60
     halt = 61
     circuitcluster = 62
     screen = 63
@@ -117,41 +120,69 @@ type
     inputoutput = 91
     custom = 92
     virtualcustom = 93
-    byteless = 94
-    byteadd = 95
-    bytemul = 96
-    flipflop = 97
+    qwordprogram = 94
+    delaybuffer = 95
+    virtualdelaybuffer = 96
+    console = 97
+    byteshl = 98
+    byteshr = 99
+    qwordconstant = 100
+    qwordnot = 101
+    qwordor = 102
+    qwordand = 103
+    qwordxor = 104
+    qwordneg = 105
+    qwordadd = 106
+    qwordmul = 107
+    qwordequal = 108
+    qwordlessu = 109
+    qwordlessi = 110
+    qwordshl = 111
+    qwordshr = 112
+    qwordmux = 113
+    qwordswitch = 114
+    statebit = 115
+    statebyte = 116
+  Tc_Point* = ref object of KaitaiStruct
+    `x`*: int16
+    `y`*: int16
+    `parent`*: KaitaiStruct
   Tc_String* = ref object of KaitaiStruct
     `len`*: uint64
     `content`*: string
     `parent`*: KaitaiStruct
-  Tc_Point* = ref object of KaitaiStruct
-    `x`*: int8
-    `y`*: int8
-    `parent`*: KaitaiStruct
+  Tc_CircuitPath* = ref object of KaitaiStruct
+    `start`*: Tc_Point
+    `body`*: seq[Tc_CircuitSegment]
+    `parent`*: Tc_Circuit
+  Tc_CircuitSegment* = ref object of KaitaiStruct
+    `direction`*: uint64
+    `length`*: uint64
+    `parent`*: Tc_CircuitPath
+  Tc_Circuit* = ref object of KaitaiStruct
+    `permanentId`*: uint64
+    `kind`*: Tc_CircuitKind
+    `color`*: uint8
+    `comment`*: Tc_String
+    `path`*: Tc_CircuitPath
+    `parent`*: Tc
   Tc_Component* = ref object of KaitaiStruct
     `kind`*: Tc_ComponentKind
     `position`*: Tc_Point
     `rotation`*: uint8
-    `permanentId`*: uint32
+    `permanentId`*: uint64
     `customString`*: Tc_String
     `programName`*: Tc_String
     `customId`*: uint64
     `parent`*: Tc
-  Tc_Circuit* = ref object of KaitaiStruct
-    `permanentId`*: uint32
-    `kind`*: Tc_CircuitKind
-    `color`*: uint8
-    `comment`*: Tc_String
-    `pathLength`*: uint64
-    `path`*: seq[Tc_Point]
-    `parent`*: Tc
 
 proc read*(_: typedesc[Tc], io: KaitaiStream, root: KaitaiStruct, parent: KaitaiStruct): Tc
-proc read*(_: typedesc[Tc_String], io: KaitaiStream, root: KaitaiStruct, parent: KaitaiStruct): Tc_String
 proc read*(_: typedesc[Tc_Point], io: KaitaiStream, root: KaitaiStruct, parent: KaitaiStruct): Tc_Point
-proc read*(_: typedesc[Tc_Component], io: KaitaiStream, root: KaitaiStruct, parent: Tc): Tc_Component
+proc read*(_: typedesc[Tc_String], io: KaitaiStream, root: KaitaiStruct, parent: KaitaiStruct): Tc_String
+proc read*(_: typedesc[Tc_CircuitPath], io: KaitaiStream, root: KaitaiStruct, parent: Tc_Circuit): Tc_CircuitPath
+proc read*(_: typedesc[Tc_CircuitSegment], io: KaitaiStream, root: KaitaiStruct, parent: Tc_CircuitPath): Tc_CircuitSegment
 proc read*(_: typedesc[Tc_Circuit], io: KaitaiStream, root: KaitaiStruct, parent: Tc): Tc_Circuit
+proc read*(_: typedesc[Tc_Component], io: KaitaiStream, root: KaitaiStruct, parent: Tc): Tc_Component
 
 
 proc read*(_: typedesc[Tc], io: KaitaiStream, root: KaitaiStruct, parent: KaitaiStruct): Tc =
@@ -174,8 +205,8 @@ proc read*(_: typedesc[Tc], io: KaitaiStream, root: KaitaiStruct, parent: Kaitai
   this.customVisible = customVisibleExpr
   let clockSpeedExpr = this.io.readU4le()
   this.clockSpeed = clockSpeedExpr
-  let scaleLevelExpr = this.io.readU1()
-  this.scaleLevel = scaleLevelExpr
+  let nestingLevelExpr = this.io.readU1()
+  this.nestingLevel = nestingLevelExpr
   let dependcyCountExpr = this.io.readU8le()
   this.dependcyCount = dependcyCountExpr
   for i in 0 ..< int(this.dependcyCount):
@@ -183,6 +214,12 @@ proc read*(_: typedesc[Tc], io: KaitaiStream, root: KaitaiStruct, parent: Kaitai
     this.dependecies.add(it)
   let descriptionExpr = Tc_String.read(this.io, this.root, this)
   this.description = descriptionExpr
+  let unpackedExpr = this.io.readU1()
+  this.unpacked = unpackedExpr
+  let cameraPositionExpr = Tc_Point.read(this.io, this.root, this)
+  this.cameraPosition = cameraPositionExpr
+  let cachedDesignExpr = this.io.readU1()
+  this.cachedDesign = cachedDesignExpr
   let componentCountExpr = this.io.readU8le()
   this.componentCount = componentCountExpr
   for i in 0 ..< int(this.componentCount):
@@ -196,6 +233,22 @@ proc read*(_: typedesc[Tc], io: KaitaiStream, root: KaitaiStruct, parent: Kaitai
 
 proc fromFile*(_: typedesc[Tc], filename: string): Tc =
   Tc.read(newKaitaiFileStream(filename), nil, nil)
+
+proc read*(_: typedesc[Tc_Point], io: KaitaiStream, root: KaitaiStruct, parent: KaitaiStruct): Tc_Point =
+  template this: untyped = result
+  this = new(Tc_Point)
+  let root = if root == nil: cast[Tc](this) else: cast[Tc](root)
+  this.io = io
+  this.root = root
+  this.parent = parent
+
+  let xExpr = this.io.readS2le()
+  this.x = xExpr
+  let yExpr = this.io.readS2le()
+  this.y = yExpr
+
+proc fromFile*(_: typedesc[Tc_Point], filename: string): Tc_Point =
+  Tc_Point.read(newKaitaiFileStream(filename), nil, nil)
 
 proc read*(_: typedesc[Tc_String], io: KaitaiStream, root: KaitaiStruct, parent: KaitaiStruct): Tc_String =
   template this: untyped = result
@@ -213,21 +266,65 @@ proc read*(_: typedesc[Tc_String], io: KaitaiStream, root: KaitaiStruct, parent:
 proc fromFile*(_: typedesc[Tc_String], filename: string): Tc_String =
   Tc_String.read(newKaitaiFileStream(filename), nil, nil)
 
-proc read*(_: typedesc[Tc_Point], io: KaitaiStream, root: KaitaiStruct, parent: KaitaiStruct): Tc_Point =
+proc read*(_: typedesc[Tc_CircuitPath], io: KaitaiStream, root: KaitaiStruct, parent: Tc_Circuit): Tc_CircuitPath =
   template this: untyped = result
-  this = new(Tc_Point)
+  this = new(Tc_CircuitPath)
   let root = if root == nil: cast[Tc](this) else: cast[Tc](root)
   this.io = io
   this.root = root
   this.parent = parent
 
-  let xExpr = this.io.readS1()
-  this.x = xExpr
-  let yExpr = this.io.readS1()
-  this.y = yExpr
+  let startExpr = Tc_Point.read(this.io, this.root, this)
+  this.start = startExpr
+  block:
+    var i: int
+    while true:
+      let it = Tc_CircuitSegment.read(this.io, this.root, this)
+      this.body.add(it)
+      if it.length == 0:
+        break
+      inc i
 
-proc fromFile*(_: typedesc[Tc_Point], filename: string): Tc_Point =
-  Tc_Point.read(newKaitaiFileStream(filename), nil, nil)
+proc fromFile*(_: typedesc[Tc_CircuitPath], filename: string): Tc_CircuitPath =
+  Tc_CircuitPath.read(newKaitaiFileStream(filename), nil, nil)
+
+proc read*(_: typedesc[Tc_CircuitSegment], io: KaitaiStream, root: KaitaiStruct, parent: Tc_CircuitPath): Tc_CircuitSegment =
+  template this: untyped = result
+  this = new(Tc_CircuitSegment)
+  let root = if root == nil: cast[Tc](this) else: cast[Tc](root)
+  this.io = io
+  this.root = root
+  this.parent = parent
+
+  let directionExpr = this.io.readBitsIntBe(3)
+  this.direction = directionExpr
+  let lengthExpr = this.io.readBitsIntBe(5)
+  this.length = lengthExpr
+
+proc fromFile*(_: typedesc[Tc_CircuitSegment], filename: string): Tc_CircuitSegment =
+  Tc_CircuitSegment.read(newKaitaiFileStream(filename), nil, nil)
+
+proc read*(_: typedesc[Tc_Circuit], io: KaitaiStream, root: KaitaiStruct, parent: Tc): Tc_Circuit =
+  template this: untyped = result
+  this = new(Tc_Circuit)
+  let root = if root == nil: cast[Tc](this) else: cast[Tc](root)
+  this.io = io
+  this.root = root
+  this.parent = parent
+
+  let permanentIdExpr = this.io.readU8le()
+  this.permanentId = permanentIdExpr
+  let kindExpr = Tc_CircuitKind(this.io.readU1())
+  this.kind = kindExpr
+  let colorExpr = this.io.readU1()
+  this.color = colorExpr
+  let commentExpr = Tc_String.read(this.io, this.root, this)
+  this.comment = commentExpr
+  let pathExpr = Tc_CircuitPath.read(this.io, this.root, this)
+  this.path = pathExpr
+
+proc fromFile*(_: typedesc[Tc_Circuit], filename: string): Tc_Circuit =
+  Tc_Circuit.read(newKaitaiFileStream(filename), nil, nil)
 
 proc read*(_: typedesc[Tc_Component], io: KaitaiStream, root: KaitaiStruct, parent: Tc): Tc_Component =
   template this: untyped = result
@@ -243,7 +340,7 @@ proc read*(_: typedesc[Tc_Component], io: KaitaiStream, root: KaitaiStruct, pare
   this.position = positionExpr
   let rotationExpr = this.io.readU1()
   this.rotation = rotationExpr
-  let permanentIdExpr = this.io.readU4le()
+  let permanentIdExpr = this.io.readU8le()
   this.permanentId = permanentIdExpr
   let customStringExpr = Tc_String.read(this.io, this.root, this)
   this.customString = customStringExpr
@@ -256,29 +353,4 @@ proc read*(_: typedesc[Tc_Component], io: KaitaiStream, root: KaitaiStruct, pare
 
 proc fromFile*(_: typedesc[Tc_Component], filename: string): Tc_Component =
   Tc_Component.read(newKaitaiFileStream(filename), nil, nil)
-
-proc read*(_: typedesc[Tc_Circuit], io: KaitaiStream, root: KaitaiStruct, parent: Tc): Tc_Circuit =
-  template this: untyped = result
-  this = new(Tc_Circuit)
-  let root = if root == nil: cast[Tc](this) else: cast[Tc](root)
-  this.io = io
-  this.root = root
-  this.parent = parent
-
-  let permanentIdExpr = this.io.readU4le()
-  this.permanentId = permanentIdExpr
-  let kindExpr = Tc_CircuitKind(this.io.readU1())
-  this.kind = kindExpr
-  let colorExpr = this.io.readU1()
-  this.color = colorExpr
-  let commentExpr = Tc_String.read(this.io, this.root, this)
-  this.comment = commentExpr
-  let pathLengthExpr = this.io.readU8le()
-  this.pathLength = pathLengthExpr
-  for i in 0 ..< int(this.pathLength):
-    let it = Tc_Point.read(this.io, this.root, this)
-    this.path.add(it)
-
-proc fromFile*(_: typedesc[Tc_Circuit], filename: string): Tc_Circuit =
-  Tc_Circuit.read(newKaitaiFileStream(filename), nil, nil)
 

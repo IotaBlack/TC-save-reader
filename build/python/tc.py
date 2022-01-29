@@ -30,8 +30,8 @@ class Tc(KaitaiStruct):
         nor = 10
         xor = 11
         xnor = 12
-        counter = 13
-        virtualcounter = 14
+        bytecounter = 13
+        virtualbytecounter = 14
         qwordcounter = 15
         virtualqwordcounter = 16
         ram = 17
@@ -49,9 +49,9 @@ class Tc(KaitaiStruct):
         qwordregister = 29
         virtualqwordregister = 30
         byteswitch = 31
-        mux = 32
-        demux = 33
-        biggerdemux = 34
+        bytemux = 32
+        decoder1 = 33
+        decoder3 = 34
         byteconstant = 35
         bytenot = 36
         byteor = 37
@@ -61,8 +61,8 @@ class Tc(KaitaiStruct):
         bytelessu = 41
         bytelessi = 42
         byteneg = 43
-        byteadd2 = 44
-        bytemul2 = 45
+        byteadd = 44
+        bytemul = 45
         bytesplitter = 46
         bytemaker = 47
         qwordsplitter = 48
@@ -76,8 +76,8 @@ class Tc(KaitaiStruct):
         waveformgenerator = 56
         httpclient = 57
         asciiscreen = 58
-        keyboard = 59
-        fileinput = 60
+        keypad = 59
+        filerom = 60
         halt = 61
         circuitcluster = 62
         screen = 63
@@ -111,10 +111,29 @@ class Tc(KaitaiStruct):
         inputoutput = 91
         custom = 92
         virtualcustom = 93
-        byteless = 94
-        byteadd = 95
-        bytemul = 96
-        flipflop = 97
+        qwordprogram = 94
+        delaybuffer = 95
+        virtualdelaybuffer = 96
+        console = 97
+        byteshl = 98
+        byteshr = 99
+        qwordconstant = 100
+        qwordnot = 101
+        qwordor = 102
+        qwordand = 103
+        qwordxor = 104
+        qwordneg = 105
+        qwordadd = 106
+        qwordmul = 107
+        qwordequal = 108
+        qwordlessu = 109
+        qwordlessi = 110
+        qwordshl = 111
+        qwordshr = 112
+        qwordmux = 113
+        qwordswitch = 114
+        statebit = 115
+        statebyte = 116
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
         self._parent = _parent
@@ -123,20 +142,23 @@ class Tc(KaitaiStruct):
 
     def _read(self):
         self.magic = self._io.read_bytes(1)
-        if not self.magic == b"\x00":
-            raise kaitaistruct.ValidationNotEqualError(b"\x00", self.magic, self._io, u"/seq/0")
+        if not self.magic == b"\x01":
+            raise kaitaistruct.ValidationNotEqualError(b"\x01", self.magic, self._io, u"/seq/0")
         self.save_version = self._io.read_s8le()
         self.nand = self._io.read_u4le()
         self.delay = self._io.read_u4le()
         self.custom_visible = self._io.read_u1()
         self.clock_speed = self._io.read_u4le()
-        self.scale_level = self._io.read_u1()
+        self.nesting_level = self._io.read_u1()
         self.dependcy_count = self._io.read_u8le()
         self.dependecies = [None] * (self.dependcy_count)
         for i in range(self.dependcy_count):
             self.dependecies[i] = self._io.read_u8le()
 
         self.description = Tc.String(self._io, self, self._root)
+        self.unpacked = self._io.read_u1()
+        self.camera_position = Tc.Point(self._io, self, self._root)
+        self.cached_design = self._io.read_u1()
         self.component_count = self._io.read_u8le()
         self.components = [None] * (self.component_count)
         for i in range(self.component_count):
@@ -146,6 +168,18 @@ class Tc(KaitaiStruct):
         self.circuits = [None] * (self.circuit_count)
         for i in range(self.circuit_count):
             self.circuits[i] = Tc.Circuit(self._io, self, self._root)
+
+
+    class Point(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.x = self._io.read_s2le()
+            self.y = self._io.read_s2le()
 
 
     class String(KaitaiStruct):
@@ -160,7 +194,7 @@ class Tc(KaitaiStruct):
             self.content = (self._io.read_bytes(self.len)).decode(u"utf8")
 
 
-    class Point(KaitaiStruct):
+    class CircuitPath(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
@@ -168,8 +202,42 @@ class Tc(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.x = self._io.read_s1()
-            self.y = self._io.read_s1()
+            self.start = Tc.Point(self._io, self, self._root)
+            self.body = []
+            i = 0
+            while True:
+                _ = Tc.CircuitSegment(self._io, self, self._root)
+                self.body.append(_)
+                if _.length == 0:
+                    break
+                i += 1
+
+
+    class CircuitSegment(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.direction = self._io.read_bits_int_be(3)
+            self.length = self._io.read_bits_int_be(5)
+
+
+    class Circuit(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.permanent_id = self._io.read_u8le()
+            self.kind = KaitaiStream.resolve_enum(Tc.CircuitKind, self._io.read_u1())
+            self.color = self._io.read_u1()
+            self.comment = Tc.String(self._io, self, self._root)
+            self.path = Tc.CircuitPath(self._io, self, self._root)
 
 
     class Component(KaitaiStruct):
@@ -183,32 +251,13 @@ class Tc(KaitaiStruct):
             self.kind = KaitaiStream.resolve_enum(Tc.ComponentKind, self._io.read_u2le())
             self.position = Tc.Point(self._io, self, self._root)
             self.rotation = self._io.read_u1()
-            self.permanent_id = self._io.read_u4le()
+            self.permanent_id = self._io.read_u8le()
             self.custom_string = Tc.String(self._io, self, self._root)
             if  (( ((self.kind.value > 63) and (self.kind.value < 69)) ) or (self.kind.value == 94)) :
                 self.program_name = Tc.String(self._io, self, self._root)
 
             if self.kind.value == 92:
                 self.custom_id = self._io.read_u8le()
-
-
-
-    class Circuit(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.permanent_id = self._io.read_u4le()
-            self.kind = KaitaiStream.resolve_enum(Tc.CircuitKind, self._io.read_u1())
-            self.color = self._io.read_u1()
-            self.comment = Tc.String(self._io, self, self._root)
-            self.path_length = self._io.read_u8le()
-            self.path = [None] * (self.path_length)
-            for i in range(self.path_length):
-                self.path[i] = Tc.Point(self._io, self, self._root)
 
 
 

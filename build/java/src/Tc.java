@@ -45,8 +45,8 @@ public class Tc extends KaitaiStruct {
         NOR(10),
         XOR(11),
         XNOR(12),
-        COUNTER(13),
-        VIRTUALCOUNTER(14),
+        BYTECOUNTER(13),
+        VIRTUALBYTECOUNTER(14),
         QWORDCOUNTER(15),
         VIRTUALQWORDCOUNTER(16),
         RAM(17),
@@ -64,9 +64,9 @@ public class Tc extends KaitaiStruct {
         QWORDREGISTER(29),
         VIRTUALQWORDREGISTER(30),
         BYTESWITCH(31),
-        MUX(32),
-        DEMUX(33),
-        BIGGERDEMUX(34),
+        BYTEMUX(32),
+        DECODER1(33),
+        DECODER3(34),
         BYTECONSTANT(35),
         BYTENOT(36),
         BYTEOR(37),
@@ -76,8 +76,8 @@ public class Tc extends KaitaiStruct {
         BYTELESSU(41),
         BYTELESSI(42),
         BYTENEG(43),
-        BYTEADD2(44),
-        BYTEMUL2(45),
+        BYTEADD(44),
+        BYTEMUL(45),
         BYTESPLITTER(46),
         BYTEMAKER(47),
         QWORDSPLITTER(48),
@@ -91,8 +91,8 @@ public class Tc extends KaitaiStruct {
         WAVEFORMGENERATOR(56),
         HTTPCLIENT(57),
         ASCIISCREEN(58),
-        KEYBOARD(59),
-        FILEINPUT(60),
+        KEYPAD(59),
+        FILEROM(60),
         HALT(61),
         CIRCUITCLUSTER(62),
         SCREEN(63),
@@ -126,15 +126,34 @@ public class Tc extends KaitaiStruct {
         INPUTOUTPUT(91),
         CUSTOM(92),
         VIRTUALCUSTOM(93),
-        BYTELESS(94),
-        BYTEADD(95),
-        BYTEMUL(96),
-        FLIPFLOP(97);
+        QWORDPROGRAM(94),
+        DELAYBUFFER(95),
+        VIRTUALDELAYBUFFER(96),
+        CONSOLE(97),
+        BYTESHL(98),
+        BYTESHR(99),
+        QWORDCONSTANT(100),
+        QWORDNOT(101),
+        QWORDOR(102),
+        QWORDAND(103),
+        QWORDXOR(104),
+        QWORDNEG(105),
+        QWORDADD(106),
+        QWORDMUL(107),
+        QWORDEQUAL(108),
+        QWORDLESSU(109),
+        QWORDLESSI(110),
+        QWORDSHL(111),
+        QWORDSHR(112),
+        QWORDMUX(113),
+        QWORDSWITCH(114),
+        STATEBIT(115),
+        STATEBYTE(116);
 
         private final long id;
         ComponentKind(long id) { this.id = id; }
         public long id() { return id; }
-        private static final Map<Long, ComponentKind> byId = new HashMap<Long, ComponentKind>(98);
+        private static final Map<Long, ComponentKind> byId = new HashMap<Long, ComponentKind>(117);
         static {
             for (ComponentKind e : ComponentKind.values())
                 byId.put(e.id(), e);
@@ -158,21 +177,24 @@ public class Tc extends KaitaiStruct {
     }
     private void _read() {
         this.magic = this._io.readBytes(1);
-        if (!(Arrays.equals(magic(), new byte[] { 0 }))) {
-            throw new KaitaiStream.ValidationNotEqualError(new byte[] { 0 }, magic(), _io(), "/seq/0");
+        if (!(Arrays.equals(magic(), new byte[] { 1 }))) {
+            throw new KaitaiStream.ValidationNotEqualError(new byte[] { 1 }, magic(), _io(), "/seq/0");
         }
         this.saveVersion = this._io.readS8le();
         this.nand = this._io.readU4le();
         this.delay = this._io.readU4le();
         this.customVisible = this._io.readU1();
         this.clockSpeed = this._io.readU4le();
-        this.scaleLevel = this._io.readU1();
+        this.nestingLevel = this._io.readU1();
         this.dependcyCount = this._io.readU8le();
         dependecies = new ArrayList<Long>(((Number) (dependcyCount())).intValue());
         for (int i = 0; i < dependcyCount(); i++) {
             this.dependecies.add(this._io.readU8le());
         }
         this.description = new String(this._io, this, _root);
+        this.unpacked = this._io.readU1();
+        this.cameraPosition = new Point(this._io, this, _root);
+        this.cachedDesign = this._io.readU1();
         this.componentCount = this._io.readU8le();
         components = new ArrayList<Component>(((Number) (componentCount())).intValue());
         for (int i = 0; i < componentCount(); i++) {
@@ -183,6 +205,38 @@ public class Tc extends KaitaiStruct {
         for (int i = 0; i < circuitCount(); i++) {
             this.circuits.add(new Circuit(this._io, this, _root));
         }
+    }
+    public static class Point extends KaitaiStruct {
+        public static Point fromFile(String fileName) throws IOException {
+            return new Point(new ByteBufferKaitaiStream(fileName));
+        }
+
+        public Point(KaitaiStream _io) {
+            this(_io, null, null);
+        }
+
+        public Point(KaitaiStream _io, KaitaiStruct _parent) {
+            this(_io, _parent, null);
+        }
+
+        public Point(KaitaiStream _io, KaitaiStruct _parent, Tc _root) {
+            super(_io);
+            this._parent = _parent;
+            this._root = _root;
+            _read();
+        }
+        private void _read() {
+            this.x = this._io.readS2le();
+            this.y = this._io.readS2le();
+        }
+        private short x;
+        private short y;
+        private Tc _root;
+        private KaitaiStruct _parent;
+        public short x() { return x; }
+        public short y() { return y; }
+        public Tc _root() { return _root; }
+        public KaitaiStruct _parent() { return _parent; }
     }
     public static class String extends KaitaiStruct {
         public static String fromFile(String fileName) throws IOException {
@@ -216,37 +270,119 @@ public class Tc extends KaitaiStruct {
         public Tc _root() { return _root; }
         public KaitaiStruct _parent() { return _parent; }
     }
-    public static class Point extends KaitaiStruct {
-        public static Point fromFile(String fileName) throws IOException {
-            return new Point(new ByteBufferKaitaiStream(fileName));
+    public static class CircuitPath extends KaitaiStruct {
+        public static CircuitPath fromFile(String fileName) throws IOException {
+            return new CircuitPath(new ByteBufferKaitaiStream(fileName));
         }
 
-        public Point(KaitaiStream _io) {
+        public CircuitPath(KaitaiStream _io) {
             this(_io, null, null);
         }
 
-        public Point(KaitaiStream _io, KaitaiStruct _parent) {
+        public CircuitPath(KaitaiStream _io, Tc.Circuit _parent) {
             this(_io, _parent, null);
         }
 
-        public Point(KaitaiStream _io, KaitaiStruct _parent, Tc _root) {
+        public CircuitPath(KaitaiStream _io, Tc.Circuit _parent, Tc _root) {
             super(_io);
             this._parent = _parent;
             this._root = _root;
             _read();
         }
         private void _read() {
-            this.x = this._io.readS1();
-            this.y = this._io.readS1();
+            this.start = new Point(this._io, this, _root);
+            this.body = new ArrayList<CircuitSegment>();
+            {
+                CircuitSegment _it;
+                int i = 0;
+                do {
+                    _it = new CircuitSegment(this._io, this, _root);
+                    this.body.add(_it);
+                    i++;
+                } while (!(_it.length() == 0));
+            }
         }
-        private byte x;
-        private byte y;
+        private Point start;
+        private ArrayList<CircuitSegment> body;
         private Tc _root;
-        private KaitaiStruct _parent;
-        public byte x() { return x; }
-        public byte y() { return y; }
+        private Tc.Circuit _parent;
+        public Point start() { return start; }
+        public ArrayList<CircuitSegment> body() { return body; }
         public Tc _root() { return _root; }
-        public KaitaiStruct _parent() { return _parent; }
+        public Tc.Circuit _parent() { return _parent; }
+    }
+    public static class CircuitSegment extends KaitaiStruct {
+        public static CircuitSegment fromFile(String fileName) throws IOException {
+            return new CircuitSegment(new ByteBufferKaitaiStream(fileName));
+        }
+
+        public CircuitSegment(KaitaiStream _io) {
+            this(_io, null, null);
+        }
+
+        public CircuitSegment(KaitaiStream _io, Tc.CircuitPath _parent) {
+            this(_io, _parent, null);
+        }
+
+        public CircuitSegment(KaitaiStream _io, Tc.CircuitPath _parent, Tc _root) {
+            super(_io);
+            this._parent = _parent;
+            this._root = _root;
+            _read();
+        }
+        private void _read() {
+            this.direction = this._io.readBitsIntBe(3);
+            this.length = this._io.readBitsIntBe(5);
+        }
+        private long direction;
+        private long length;
+        private Tc _root;
+        private Tc.CircuitPath _parent;
+        public long direction() { return direction; }
+        public long length() { return length; }
+        public Tc _root() { return _root; }
+        public Tc.CircuitPath _parent() { return _parent; }
+    }
+    public static class Circuit extends KaitaiStruct {
+        public static Circuit fromFile(String fileName) throws IOException {
+            return new Circuit(new ByteBufferKaitaiStream(fileName));
+        }
+
+        public Circuit(KaitaiStream _io) {
+            this(_io, null, null);
+        }
+
+        public Circuit(KaitaiStream _io, Tc _parent) {
+            this(_io, _parent, null);
+        }
+
+        public Circuit(KaitaiStream _io, Tc _parent, Tc _root) {
+            super(_io);
+            this._parent = _parent;
+            this._root = _root;
+            _read();
+        }
+        private void _read() {
+            this.permanentId = this._io.readU8le();
+            this.kind = Tc.CircuitKind.byId(this._io.readU1());
+            this.color = this._io.readU1();
+            this.comment = new String(this._io, this, _root);
+            this.path = new CircuitPath(this._io, this, _root);
+        }
+        private long permanentId;
+        private CircuitKind kind;
+        private int color;
+        private String comment;
+        private CircuitPath path;
+        private Tc _root;
+        private Tc _parent;
+        public long permanentId() { return permanentId; }
+        public CircuitKind kind() { return kind; }
+        public int color() { return color; }
+        public String comment() { return comment; }
+        public CircuitPath path() { return path; }
+        public Tc _root() { return _root; }
+        public Tc _parent() { return _parent; }
     }
     public static class Component extends KaitaiStruct {
         public static Component fromFile(String fileName) throws IOException {
@@ -271,7 +407,7 @@ public class Tc extends KaitaiStruct {
             this.kind = Tc.ComponentKind.byId(this._io.readU2le());
             this.position = new Point(this._io, this, _root);
             this.rotation = this._io.readU1();
-            this.permanentId = this._io.readU4le();
+            this.permanentId = this._io.readU8le();
             this.customString = new String(this._io, this, _root);
             if ( (( ((kind().id() > 63) && (kind().id() < 69)) ) || (kind().id() == 94)) ) {
                 this.programName = new String(this._io, this, _root);
@@ -299,63 +435,19 @@ public class Tc extends KaitaiStruct {
         public Tc _root() { return _root; }
         public Tc _parent() { return _parent; }
     }
-    public static class Circuit extends KaitaiStruct {
-        public static Circuit fromFile(String fileName) throws IOException {
-            return new Circuit(new ByteBufferKaitaiStream(fileName));
-        }
-
-        public Circuit(KaitaiStream _io) {
-            this(_io, null, null);
-        }
-
-        public Circuit(KaitaiStream _io, Tc _parent) {
-            this(_io, _parent, null);
-        }
-
-        public Circuit(KaitaiStream _io, Tc _parent, Tc _root) {
-            super(_io);
-            this._parent = _parent;
-            this._root = _root;
-            _read();
-        }
-        private void _read() {
-            this.permanentId = this._io.readU4le();
-            this.kind = Tc.CircuitKind.byId(this._io.readU1());
-            this.color = this._io.readU1();
-            this.comment = new String(this._io, this, _root);
-            this.pathLength = this._io.readU8le();
-            path = new ArrayList<Point>(((Number) (pathLength())).intValue());
-            for (int i = 0; i < pathLength(); i++) {
-                this.path.add(new Point(this._io, this, _root));
-            }
-        }
-        private long permanentId;
-        private CircuitKind kind;
-        private int color;
-        private String comment;
-        private long pathLength;
-        private ArrayList<Point> path;
-        private Tc _root;
-        private Tc _parent;
-        public long permanentId() { return permanentId; }
-        public CircuitKind kind() { return kind; }
-        public int color() { return color; }
-        public String comment() { return comment; }
-        public long pathLength() { return pathLength; }
-        public ArrayList<Point> path() { return path; }
-        public Tc _root() { return _root; }
-        public Tc _parent() { return _parent; }
-    }
     private byte[] magic;
     private long saveVersion;
     private long nand;
     private long delay;
     private int customVisible;
     private long clockSpeed;
-    private int scaleLevel;
+    private int nestingLevel;
     private long dependcyCount;
     private ArrayList<Long> dependecies;
     private String description;
+    private int unpacked;
+    private Point cameraPosition;
+    private int cachedDesign;
     private long componentCount;
     private ArrayList<Component> components;
     private long circuitCount;
@@ -368,10 +460,13 @@ public class Tc extends KaitaiStruct {
     public long delay() { return delay; }
     public int customVisible() { return customVisible; }
     public long clockSpeed() { return clockSpeed; }
-    public int scaleLevel() { return scaleLevel; }
+    public int nestingLevel() { return nestingLevel; }
     public long dependcyCount() { return dependcyCount; }
     public ArrayList<Long> dependecies() { return dependecies; }
     public String description() { return description; }
+    public int unpacked() { return unpacked; }
+    public Point cameraPosition() { return cameraPosition; }
+    public int cachedDesign() { return cachedDesign; }
     public long componentCount() { return componentCount; }
     public ArrayList<Component> components() { return components; }
     public long circuitCount() { return circuitCount; }

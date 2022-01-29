@@ -29,8 +29,8 @@ class Tc < Kaitai::Struct::Struct
     10 => :component_kind_nor,
     11 => :component_kind_xor,
     12 => :component_kind_xnor,
-    13 => :component_kind_counter,
-    14 => :component_kind_virtualcounter,
+    13 => :component_kind_bytecounter,
+    14 => :component_kind_virtualbytecounter,
     15 => :component_kind_qwordcounter,
     16 => :component_kind_virtualqwordcounter,
     17 => :component_kind_ram,
@@ -48,9 +48,9 @@ class Tc < Kaitai::Struct::Struct
     29 => :component_kind_qwordregister,
     30 => :component_kind_virtualqwordregister,
     31 => :component_kind_byteswitch,
-    32 => :component_kind_mux,
-    33 => :component_kind_demux,
-    34 => :component_kind_biggerdemux,
+    32 => :component_kind_bytemux,
+    33 => :component_kind_decoder1,
+    34 => :component_kind_decoder3,
     35 => :component_kind_byteconstant,
     36 => :component_kind_bytenot,
     37 => :component_kind_byteor,
@@ -60,8 +60,8 @@ class Tc < Kaitai::Struct::Struct
     41 => :component_kind_bytelessu,
     42 => :component_kind_bytelessi,
     43 => :component_kind_byteneg,
-    44 => :component_kind_byteadd2,
-    45 => :component_kind_bytemul2,
+    44 => :component_kind_byteadd,
+    45 => :component_kind_bytemul,
     46 => :component_kind_bytesplitter,
     47 => :component_kind_bytemaker,
     48 => :component_kind_qwordsplitter,
@@ -75,8 +75,8 @@ class Tc < Kaitai::Struct::Struct
     56 => :component_kind_waveformgenerator,
     57 => :component_kind_httpclient,
     58 => :component_kind_asciiscreen,
-    59 => :component_kind_keyboard,
-    60 => :component_kind_fileinput,
+    59 => :component_kind_keypad,
+    60 => :component_kind_filerom,
     61 => :component_kind_halt,
     62 => :component_kind_circuitcluster,
     63 => :component_kind_screen,
@@ -110,10 +110,29 @@ class Tc < Kaitai::Struct::Struct
     91 => :component_kind_inputoutput,
     92 => :component_kind_custom,
     93 => :component_kind_virtualcustom,
-    94 => :component_kind_byteless,
-    95 => :component_kind_byteadd,
-    96 => :component_kind_bytemul,
-    97 => :component_kind_flipflop,
+    94 => :component_kind_qwordprogram,
+    95 => :component_kind_delaybuffer,
+    96 => :component_kind_virtualdelaybuffer,
+    97 => :component_kind_console,
+    98 => :component_kind_byteshl,
+    99 => :component_kind_byteshr,
+    100 => :component_kind_qwordconstant,
+    101 => :component_kind_qwordnot,
+    102 => :component_kind_qwordor,
+    103 => :component_kind_qwordand,
+    104 => :component_kind_qwordxor,
+    105 => :component_kind_qwordneg,
+    106 => :component_kind_qwordadd,
+    107 => :component_kind_qwordmul,
+    108 => :component_kind_qwordequal,
+    109 => :component_kind_qwordlessu,
+    110 => :component_kind_qwordlessi,
+    111 => :component_kind_qwordshl,
+    112 => :component_kind_qwordshr,
+    113 => :component_kind_qwordmux,
+    114 => :component_kind_qwordswitch,
+    115 => :component_kind_statebit,
+    116 => :component_kind_statebyte,
   }
   I__COMPONENT_KIND = COMPONENT_KIND.invert
   def initialize(_io, _parent = nil, _root = self)
@@ -123,19 +142,22 @@ class Tc < Kaitai::Struct::Struct
 
   def _read
     @magic = @_io.read_bytes(1)
-    raise Kaitai::Struct::ValidationNotEqualError.new([0].pack('C*'), magic, _io, "/seq/0") if not magic == [0].pack('C*')
+    raise Kaitai::Struct::ValidationNotEqualError.new([1].pack('C*'), magic, _io, "/seq/0") if not magic == [1].pack('C*')
     @save_version = @_io.read_s8le
     @nand = @_io.read_u4le
     @delay = @_io.read_u4le
     @custom_visible = @_io.read_u1
     @clock_speed = @_io.read_u4le
-    @scale_level = @_io.read_u1
+    @nesting_level = @_io.read_u1
     @dependcy_count = @_io.read_u8le
     @dependecies = Array.new(dependcy_count)
     (dependcy_count).times { |i|
       @dependecies[i] = @_io.read_u8le
     }
     @description = String.new(@_io, self, @_root)
+    @unpacked = @_io.read_u1
+    @camera_position = Point.new(@_io, self, @_root)
+    @cached_design = @_io.read_u1
     @component_count = @_io.read_u8le
     @components = Array.new(component_count)
     (component_count).times { |i|
@@ -147,6 +169,20 @@ class Tc < Kaitai::Struct::Struct
       @circuits[i] = Circuit.new(@_io, self, @_root)
     }
     self
+  end
+  class Point < Kaitai::Struct::Struct
+    def initialize(_io, _parent = nil, _root = self)
+      super(_io, _parent, _root)
+      _read
+    end
+
+    def _read
+      @x = @_io.read_s2le
+      @y = @_io.read_s2le
+      self
+    end
+    attr_reader :x
+    attr_reader :y
   end
   class String < Kaitai::Struct::Struct
     def initialize(_io, _parent = nil, _root = self)
@@ -162,19 +198,59 @@ class Tc < Kaitai::Struct::Struct
     attr_reader :len
     attr_reader :content
   end
-  class Point < Kaitai::Struct::Struct
+  class CircuitPath < Kaitai::Struct::Struct
     def initialize(_io, _parent = nil, _root = self)
       super(_io, _parent, _root)
       _read
     end
 
     def _read
-      @x = @_io.read_s1
-      @y = @_io.read_s1
+      @start = Point.new(@_io, self, @_root)
+      @body = []
+      i = 0
+      begin
+        _ = CircuitSegment.new(@_io, self, @_root)
+        @body << _
+        i += 1
+      end until _.length == 0
       self
     end
-    attr_reader :x
-    attr_reader :y
+    attr_reader :start
+    attr_reader :body
+  end
+  class CircuitSegment < Kaitai::Struct::Struct
+    def initialize(_io, _parent = nil, _root = self)
+      super(_io, _parent, _root)
+      _read
+    end
+
+    def _read
+      @direction = @_io.read_bits_int_be(3)
+      @length = @_io.read_bits_int_be(5)
+      self
+    end
+    attr_reader :direction
+    attr_reader :length
+  end
+  class Circuit < Kaitai::Struct::Struct
+    def initialize(_io, _parent = nil, _root = self)
+      super(_io, _parent, _root)
+      _read
+    end
+
+    def _read
+      @permanent_id = @_io.read_u8le
+      @kind = Kaitai::Struct::Stream::resolve_enum(Tc::CIRCUIT_KIND, @_io.read_u1)
+      @color = @_io.read_u1
+      @comment = String.new(@_io, self, @_root)
+      @path = CircuitPath.new(@_io, self, @_root)
+      self
+    end
+    attr_reader :permanent_id
+    attr_reader :kind
+    attr_reader :color
+    attr_reader :comment
+    attr_reader :path
   end
   class Component < Kaitai::Struct::Struct
     def initialize(_io, _parent = nil, _root = self)
@@ -186,7 +262,7 @@ class Tc < Kaitai::Struct::Struct
       @kind = Kaitai::Struct::Stream::resolve_enum(Tc::COMPONENT_KIND, @_io.read_u2le)
       @position = Point.new(@_io, self, @_root)
       @rotation = @_io.read_u1
-      @permanent_id = @_io.read_u4le
+      @permanent_id = @_io.read_u8le
       @custom_string = String.new(@_io, self, @_root)
       if  (( ((Tc::I__COMPONENT_KIND[kind] > 63) && (Tc::I__COMPONENT_KIND[kind] < 69)) ) || (Tc::I__COMPONENT_KIND[kind] == 94)) 
         @program_name = String.new(@_io, self, @_root)
@@ -204,41 +280,19 @@ class Tc < Kaitai::Struct::Struct
     attr_reader :program_name
     attr_reader :custom_id
   end
-  class Circuit < Kaitai::Struct::Struct
-    def initialize(_io, _parent = nil, _root = self)
-      super(_io, _parent, _root)
-      _read
-    end
-
-    def _read
-      @permanent_id = @_io.read_u4le
-      @kind = Kaitai::Struct::Stream::resolve_enum(Tc::CIRCUIT_KIND, @_io.read_u1)
-      @color = @_io.read_u1
-      @comment = String.new(@_io, self, @_root)
-      @path_length = @_io.read_u8le
-      @path = Array.new(path_length)
-      (path_length).times { |i|
-        @path[i] = Point.new(@_io, self, @_root)
-      }
-      self
-    end
-    attr_reader :permanent_id
-    attr_reader :kind
-    attr_reader :color
-    attr_reader :comment
-    attr_reader :path_length
-    attr_reader :path
-  end
   attr_reader :magic
   attr_reader :save_version
   attr_reader :nand
   attr_reader :delay
   attr_reader :custom_visible
   attr_reader :clock_speed
-  attr_reader :scale_level
+  attr_reader :nesting_level
   attr_reader :dependcy_count
   attr_reader :dependecies
   attr_reader :description
+  attr_reader :unpacked
+  attr_reader :camera_position
+  attr_reader :cached_design
   attr_reader :component_count
   attr_reader :components
   attr_reader :circuit_count

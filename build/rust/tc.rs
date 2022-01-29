@@ -17,10 +17,13 @@ pub struct Tc {
     pub delay: u32,
     pub customVisible: u8,
     pub clockSpeed: u32,
-    pub scaleLevel: u8,
+    pub nestingLevel: u8,
     pub dependcyCount: u64,
     pub dependecies: Vec<u64>,
     pub description: Box<Tc__String>,
+    pub unpacked: u8,
+    pub cameraPosition: Box<Tc__Point>,
+    pub cachedDesign: u8,
     pub componentCount: u64,
     pub components: Vec<Box<Tc__Component>>,
     pub circuitCount: u64,
@@ -54,13 +57,16 @@ impl KaitaiStruct for Tc {
         self.delay = self.stream.read_u4le()?;
         self.customVisible = self.stream.read_u1()?;
         self.clockSpeed = self.stream.read_u4le()?;
-        self.scaleLevel = self.stream.read_u1()?;
+        self.nestingLevel = self.stream.read_u1()?;
         self.dependcyCount = self.stream.read_u8le()?;
         self.dependecies = vec!();
         for i in 0..self.dependcy_count {
             self.dependecies.push(self.stream.read_u8le()?);
         }
         self.description = Box::new(Tc__String::new(self.stream, self, _root)?);
+        self.unpacked = self.stream.read_u1()?;
+        self.cameraPosition = Box::new(Tc__Point::new(self.stream, self, _root)?);
+        self.cachedDesign = self.stream.read_u1()?;
         self.componentCount = self.stream.read_u8le()?;
         self.components = vec!();
         for i in 0..self.component_count {
@@ -95,8 +101,8 @@ enum Tc__ComponentKind {
     NOR,
     XOR,
     XNOR,
-    COUNTER,
-    VIRTUALCOUNTER,
+    BYTECOUNTER,
+    VIRTUALBYTECOUNTER,
     QWORDCOUNTER,
     VIRTUALQWORDCOUNTER,
     RAM,
@@ -114,9 +120,9 @@ enum Tc__ComponentKind {
     QWORDREGISTER,
     VIRTUALQWORDREGISTER,
     BYTESWITCH,
-    MUX,
-    DEMUX,
-    BIGGERDEMUX,
+    BYTEMUX,
+    DECODER1,
+    DECODER3,
     BYTECONSTANT,
     BYTENOT,
     BYTEOR,
@@ -126,8 +132,8 @@ enum Tc__ComponentKind {
     BYTELESSU,
     BYTELESSI,
     BYTENEG,
-    BYTEADD2,
-    BYTEMUL2,
+    BYTEADD,
+    BYTEMUL,
     BYTESPLITTER,
     BYTEMAKER,
     QWORDSPLITTER,
@@ -141,8 +147,8 @@ enum Tc__ComponentKind {
     WAVEFORMGENERATOR,
     HTTPCLIENT,
     ASCIISCREEN,
-    KEYBOARD,
-    FILEINPUT,
+    KEYPAD,
+    FILEROM,
     HALT,
     CIRCUITCLUSTER,
     SCREEN,
@@ -176,10 +182,63 @@ enum Tc__ComponentKind {
     INPUTOUTPUT,
     CUSTOM,
     VIRTUALCUSTOM,
-    BYTELESS,
-    BYTEADD,
-    BYTEMUL,
-    FLIPFLOP,
+    QWORDPROGRAM,
+    DELAYBUFFER,
+    VIRTUALDELAYBUFFER,
+    CONSOLE,
+    BYTESHL,
+    BYTESHR,
+    QWORDCONSTANT,
+    QWORDNOT,
+    QWORDOR,
+    QWORDAND,
+    QWORDXOR,
+    QWORDNEG,
+    QWORDADD,
+    QWORDMUL,
+    QWORDEQUAL,
+    QWORDLESSU,
+    QWORDLESSI,
+    QWORDSHL,
+    QWORDSHR,
+    QWORDMUX,
+    QWORDSWITCH,
+    STATEBIT,
+    STATEBYTE,
+}
+#[derive(Default)]
+pub struct Tc__Point {
+    pub x: i16,
+    pub y: i16,
+}
+
+impl KaitaiStruct for Tc__Point {
+    fn new<S: KaitaiStream>(stream: &mut S,
+                            _parent: &Option<Box<KaitaiStruct>>,
+                            _root: &Option<Box<KaitaiStruct>>)
+                            -> Result<Self>
+        where Self: Sized {
+        let mut s: Self = Default::default();
+
+        s.stream = stream;
+        s.read(stream, _parent, _root)?;
+
+        Ok(s)
+    }
+
+
+    fn read<S: KaitaiStream>(&mut self,
+                             stream: &mut S,
+                             _parent: &Option<Box<KaitaiStruct>>,
+                             _root: &Option<Box<KaitaiStruct>>)
+                             -> Result<()>
+        where Self: Sized {
+        self.x = self.stream.read_s2le()?;
+        self.y = self.stream.read_s2le()?;
+    }
+}
+
+impl Tc__Point {
 }
 #[derive(Default)]
 pub struct Tc__String {
@@ -216,12 +275,12 @@ impl KaitaiStruct for Tc__String {
 impl Tc__String {
 }
 #[derive(Default)]
-pub struct Tc__Point {
-    pub x: i8,
-    pub y: i8,
+pub struct Tc__CircuitPath {
+    pub start: Box<Tc__Point>,
+    pub body: Vec<Box<Tc__CircuitSegment>>,
 }
 
-impl KaitaiStruct for Tc__Point {
+impl KaitaiStruct for Tc__CircuitPath {
     fn new<S: KaitaiStream>(stream: &mut S,
                             _parent: &Option<Box<KaitaiStruct>>,
                             _root: &Option<Box<KaitaiStruct>>)
@@ -242,19 +301,98 @@ impl KaitaiStruct for Tc__Point {
                              _root: &Option<Box<KaitaiStruct>>)
                              -> Result<()>
         where Self: Sized {
-        self.x = self.stream.read_s1()?;
-        self.y = self.stream.read_s1()?;
+        self.start = Box::new(Tc__Point::new(self.stream, self, _root)?);
+        self.body = vec!();
+        while {
+            let tmpa = Box::new(Tc__CircuitSegment::new(self.stream, self, _root)?);
+            self.body.append(Box::new(Tc__CircuitSegment::new(self.stream, self, _root)?));
+            !(tmpa.length == 0)
+        } { }
     }
 }
 
-impl Tc__Point {
+impl Tc__CircuitPath {
+}
+#[derive(Default)]
+pub struct Tc__CircuitSegment {
+    pub direction: u64,
+    pub length: u64,
+}
+
+impl KaitaiStruct for Tc__CircuitSegment {
+    fn new<S: KaitaiStream>(stream: &mut S,
+                            _parent: &Option<Box<KaitaiStruct>>,
+                            _root: &Option<Box<KaitaiStruct>>)
+                            -> Result<Self>
+        where Self: Sized {
+        let mut s: Self = Default::default();
+
+        s.stream = stream;
+        s.read(stream, _parent, _root)?;
+
+        Ok(s)
+    }
+
+
+    fn read<S: KaitaiStream>(&mut self,
+                             stream: &mut S,
+                             _parent: &Option<Box<KaitaiStruct>>,
+                             _root: &Option<Box<KaitaiStruct>>)
+                             -> Result<()>
+        where Self: Sized {
+        self.direction = self.stream.read_bits_int(3)?;
+        self.length = self.stream.read_bits_int(5)?;
+    }
+}
+
+impl Tc__CircuitSegment {
+}
+#[derive(Default)]
+pub struct Tc__Circuit {
+    pub permanentId: u64,
+    pub kind: Box<Tc__CircuitKind>,
+    pub color: u8,
+    pub comment: Box<Tc__String>,
+    pub path: Box<Tc__CircuitPath>,
+}
+
+impl KaitaiStruct for Tc__Circuit {
+    fn new<S: KaitaiStream>(stream: &mut S,
+                            _parent: &Option<Box<KaitaiStruct>>,
+                            _root: &Option<Box<KaitaiStruct>>)
+                            -> Result<Self>
+        where Self: Sized {
+        let mut s: Self = Default::default();
+
+        s.stream = stream;
+        s.read(stream, _parent, _root)?;
+
+        Ok(s)
+    }
+
+
+    fn read<S: KaitaiStream>(&mut self,
+                             stream: &mut S,
+                             _parent: &Option<Box<KaitaiStruct>>,
+                             _root: &Option<Box<KaitaiStruct>>)
+                             -> Result<()>
+        where Self: Sized {
+        self.permanentId = self.stream.read_u8le()?;
+        self.kind = self.stream.read_u1()?;
+        self.color = self.stream.read_u1()?;
+        self.comment = Box::new(Tc__String::new(self.stream, self, _root)?);
+        self.path = Box::new(Tc__CircuitPath::new(self.stream, self, _root)?);
+    }
+}
+
+impl Tc__Circuit {
 }
 #[derive(Default)]
 pub struct Tc__Component {
     pub kind: Box<Tc__ComponentKind>,
     pub position: Box<Tc__Point>,
     pub rotation: u8,
-    pub permanentId: u32,
+    pub permanentId: u64,
     pub customString: Box<Tc__String>,
     pub programName: Box<Tc__String>,
     pub customId: u64,
@@ -284,7 +422,7 @@ impl KaitaiStruct for Tc__Component {
         self.kind = self.stream.read_u2le()?;
         self.position = Box::new(Tc__Point::new(self.stream, self, _root)?);
         self.rotation = self.stream.read_u1()?;
-        self.permanentId = self.stream.read_u4le()?;
+        self.permanentId = self.stream.read_u8le()?;
         self.customString = Box::new(Tc__String::new(self.stream, self, _root)?);
         if  (( ((self.kind > 63) && (self.kind < 69)) ) || (self.kind == 94))  {
             self.programName = Box::new(Tc__String::new(self.stream, self, _root)?);
@@ -296,49 +434,4 @@ impl KaitaiStruct for Tc__Component {
 }
 
 impl Tc__Component {
-}
-#[derive(Default)]
-pub struct Tc__Circuit {
-    pub permanentId: u32,
-    pub kind: Box<Tc__CircuitKind>,
-    pub color: u8,
-    pub comment: Box<Tc__String>,
-    pub pathLength: u64,
-    pub path: Vec<Box<Tc__Point>>,
-}
-
-impl KaitaiStruct for Tc__Circuit {
-    fn new<S: KaitaiStream>(stream: &mut S,
-                            _parent: &Option<Box<KaitaiStruct>>,
-                            _root: &Option<Box<KaitaiStruct>>)
-                            -> Result<Self>
-        where Self: Sized {
-        let mut s: Self = Default::default();
-
-        s.stream = stream;
-        s.read(stream, _parent, _root)?;
-
-        Ok(s)
-    }
-
-
-    fn read<S: KaitaiStream>(&mut self,
-                             stream: &mut S,
-                             _parent: &Option<Box<KaitaiStruct>>,
-                             _root: &Option<Box<KaitaiStruct>>)
-                             -> Result<()>
-        where Self: Sized {
-        self.permanentId = self.stream.read_u4le()?;
-        self.kind = self.stream.read_u1()?;
-        self.color = self.stream.read_u1()?;
-        self.comment = Box::new(Tc__String::new(self.stream, self, _root)?);
-        self.pathLength = self.stream.read_u8le()?;
-        self.path = vec!();
-        for i in 0..self.path_length {
-            self.path.push(Box::new(Tc__Point::new(self.stream, self, _root)?));
-        }
-    }
-}
-
-impl Tc__Circuit {
 }

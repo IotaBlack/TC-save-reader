@@ -8,6 +8,7 @@ tc_t::tc_t(kaitai::kstream* p__io, kaitai::kstruct* p__parent, tc_t* p__root) : 
     m__root = this;
     m_dependecies = 0;
     m_description = 0;
+    m_camera_position = 0;
     m_components = 0;
     m_circuits = 0;
 
@@ -21,15 +22,15 @@ tc_t::tc_t(kaitai::kstream* p__io, kaitai::kstruct* p__parent, tc_t* p__root) : 
 
 void tc_t::_read() {
     m_magic = m__io->read_bytes(1);
-    if (!(magic() == std::string("\x00", 1))) {
-        throw kaitai::validation_not_equal_error<std::string>(std::string("\x00", 1), magic(), _io(), std::string("/seq/0"));
+    if (!(magic() == std::string("\x01", 1))) {
+        throw kaitai::validation_not_equal_error<std::string>(std::string("\x01", 1), magic(), _io(), std::string("/seq/0"));
     }
     m_save_version = m__io->read_s8le();
     m_nand = m__io->read_u4le();
     m_delay = m__io->read_u4le();
     m_custom_visible = m__io->read_u1();
     m_clock_speed = m__io->read_u4le();
-    m_scale_level = m__io->read_u1();
+    m_nesting_level = m__io->read_u1();
     m_dependcy_count = m__io->read_u8le();
     int l_dependecies = dependcy_count();
     m_dependecies = new std::vector<uint64_t>();
@@ -38,6 +39,9 @@ void tc_t::_read() {
         m_dependecies->push_back(m__io->read_u8le());
     }
     m_description = new string_t(m__io, this, m__root);
+    m_unpacked = m__io->read_u1();
+    m_camera_position = new point_t(m__io, this, m__root);
+    m_cached_design = m__io->read_u1();
     m_component_count = m__io->read_u8le();
     int l_components = component_count();
     m_components = new std::vector<component_t*>();
@@ -65,6 +69,9 @@ void tc_t::_clean_up() {
     if (m_description) {
         delete m_description; m_description = 0;
     }
+    if (m_camera_position) {
+        delete m_camera_position; m_camera_position = 0;
+    }
     if (m_components) {
         for (std::vector<component_t*>::iterator it = m_components->begin(); it != m_components->end(); ++it) {
             delete *it;
@@ -77,6 +84,30 @@ void tc_t::_clean_up() {
         }
         delete m_circuits; m_circuits = 0;
     }
+}
+
+tc_t::point_t::point_t(kaitai::kstream* p__io, kaitai::kstruct* p__parent, tc_t* p__root) : kaitai::kstruct(p__io) {
+    m__parent = p__parent;
+    m__root = p__root;
+
+    try {
+        _read();
+    } catch(...) {
+        _clean_up();
+        throw;
+    }
+}
+
+void tc_t::point_t::_read() {
+    m_x = m__io->read_s2le();
+    m_y = m__io->read_s2le();
+}
+
+tc_t::point_t::~point_t() {
+    _clean_up();
+}
+
+void tc_t::point_t::_clean_up() {
 }
 
 tc_t::string_t::string_t(kaitai::kstream* p__io, kaitai::kstruct* p__parent, tc_t* p__root) : kaitai::kstruct(p__io) {
@@ -103,7 +134,51 @@ tc_t::string_t::~string_t() {
 void tc_t::string_t::_clean_up() {
 }
 
-tc_t::point_t::point_t(kaitai::kstream* p__io, kaitai::kstruct* p__parent, tc_t* p__root) : kaitai::kstruct(p__io) {
+tc_t::circuit_path_t::circuit_path_t(kaitai::kstream* p__io, tc_t::circuit_t* p__parent, tc_t* p__root) : kaitai::kstruct(p__io) {
+    m__parent = p__parent;
+    m__root = p__root;
+    m_start = 0;
+    m_body = 0;
+
+    try {
+        _read();
+    } catch(...) {
+        _clean_up();
+        throw;
+    }
+}
+
+void tc_t::circuit_path_t::_read() {
+    m_start = new point_t(m__io, this, m__root);
+    m_body = new std::vector<circuit_segment_t*>();
+    {
+        int i = 0;
+        circuit_segment_t* _;
+        do {
+            _ = new circuit_segment_t(m__io, this, m__root);
+            m_body->push_back(_);
+            i++;
+        } while (!(_->length() == 0));
+    }
+}
+
+tc_t::circuit_path_t::~circuit_path_t() {
+    _clean_up();
+}
+
+void tc_t::circuit_path_t::_clean_up() {
+    if (m_start) {
+        delete m_start; m_start = 0;
+    }
+    if (m_body) {
+        for (std::vector<circuit_segment_t*>::iterator it = m_body->begin(); it != m_body->end(); ++it) {
+            delete *it;
+        }
+        delete m_body; m_body = 0;
+    }
+}
+
+tc_t::circuit_segment_t::circuit_segment_t(kaitai::kstream* p__io, tc_t::circuit_path_t* p__parent, tc_t* p__root) : kaitai::kstruct(p__io) {
     m__parent = p__parent;
     m__root = p__root;
 
@@ -115,16 +190,51 @@ tc_t::point_t::point_t(kaitai::kstream* p__io, kaitai::kstruct* p__parent, tc_t*
     }
 }
 
-void tc_t::point_t::_read() {
-    m_x = m__io->read_s1();
-    m_y = m__io->read_s1();
+void tc_t::circuit_segment_t::_read() {
+    m_direction = m__io->read_bits_int_be(3);
+    m_length = m__io->read_bits_int_be(5);
 }
 
-tc_t::point_t::~point_t() {
+tc_t::circuit_segment_t::~circuit_segment_t() {
     _clean_up();
 }
 
-void tc_t::point_t::_clean_up() {
+void tc_t::circuit_segment_t::_clean_up() {
+}
+
+tc_t::circuit_t::circuit_t(kaitai::kstream* p__io, tc_t* p__parent, tc_t* p__root) : kaitai::kstruct(p__io) {
+    m__parent = p__parent;
+    m__root = p__root;
+    m_comment = 0;
+    m_path = 0;
+
+    try {
+        _read();
+    } catch(...) {
+        _clean_up();
+        throw;
+    }
+}
+
+void tc_t::circuit_t::_read() {
+    m_permanent_id = m__io->read_u8le();
+    m_kind = static_cast<tc_t::circuit_kind_t>(m__io->read_u1());
+    m_color = m__io->read_u1();
+    m_comment = new string_t(m__io, this, m__root);
+    m_path = new circuit_path_t(m__io, this, m__root);
+}
+
+tc_t::circuit_t::~circuit_t() {
+    _clean_up();
+}
+
+void tc_t::circuit_t::_clean_up() {
+    if (m_comment) {
+        delete m_comment; m_comment = 0;
+    }
+    if (m_path) {
+        delete m_path; m_path = 0;
+    }
 }
 
 tc_t::component_t::component_t(kaitai::kstream* p__io, tc_t* p__parent, tc_t* p__root) : kaitai::kstruct(p__io) {
@@ -146,7 +256,7 @@ void tc_t::component_t::_read() {
     m_kind = static_cast<tc_t::component_kind_t>(m__io->read_u2le());
     m_position = new point_t(m__io, this, m__root);
     m_rotation = m__io->read_u1();
-    m_permanent_id = m__io->read_u4le();
+    m_permanent_id = m__io->read_u8le();
     m_custom_string = new string_t(m__io, this, m__root);
     n_program_name = true;
     if ( (( ((kind() > 63) && (kind() < 69)) ) || (kind() == 94)) ) {
@@ -177,49 +287,5 @@ void tc_t::component_t::_clean_up() {
         }
     }
     if (!n_custom_id) {
-    }
-}
-
-tc_t::circuit_t::circuit_t(kaitai::kstream* p__io, tc_t* p__parent, tc_t* p__root) : kaitai::kstruct(p__io) {
-    m__parent = p__parent;
-    m__root = p__root;
-    m_comment = 0;
-    m_path = 0;
-
-    try {
-        _read();
-    } catch(...) {
-        _clean_up();
-        throw;
-    }
-}
-
-void tc_t::circuit_t::_read() {
-    m_permanent_id = m__io->read_u4le();
-    m_kind = static_cast<tc_t::circuit_kind_t>(m__io->read_u1());
-    m_color = m__io->read_u1();
-    m_comment = new string_t(m__io, this, m__root);
-    m_path_length = m__io->read_u8le();
-    int l_path = path_length();
-    m_path = new std::vector<point_t*>();
-    m_path->reserve(l_path);
-    for (int i = 0; i < l_path; i++) {
-        m_path->push_back(new point_t(m__io, this, m__root));
-    }
-}
-
-tc_t::circuit_t::~circuit_t() {
-    _clean_up();
-}
-
-void tc_t::circuit_t::_clean_up() {
-    if (m_comment) {
-        delete m_comment; m_comment = 0;
-    }
-    if (m_path) {
-        for (std::vector<point_t*>::iterator it = m_path->begin(); it != m_path->end(); ++it) {
-            delete *it;
-        }
-        delete m_path; m_path = 0;
     }
 }

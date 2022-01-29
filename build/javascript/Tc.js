@@ -34,8 +34,8 @@ var Tc = (function() {
     NOR: 10,
     XOR: 11,
     XNOR: 12,
-    COUNTER: 13,
-    VIRTUALCOUNTER: 14,
+    BYTECOUNTER: 13,
+    VIRTUALBYTECOUNTER: 14,
     QWORDCOUNTER: 15,
     VIRTUALQWORDCOUNTER: 16,
     RAM: 17,
@@ -53,9 +53,9 @@ var Tc = (function() {
     QWORDREGISTER: 29,
     VIRTUALQWORDREGISTER: 30,
     BYTESWITCH: 31,
-    MUX: 32,
-    DEMUX: 33,
-    BIGGERDEMUX: 34,
+    BYTEMUX: 32,
+    DECODER1: 33,
+    DECODER3: 34,
     BYTECONSTANT: 35,
     BYTENOT: 36,
     BYTEOR: 37,
@@ -65,8 +65,8 @@ var Tc = (function() {
     BYTELESSU: 41,
     BYTELESSI: 42,
     BYTENEG: 43,
-    BYTEADD2: 44,
-    BYTEMUL2: 45,
+    BYTEADD: 44,
+    BYTEMUL: 45,
     BYTESPLITTER: 46,
     BYTEMAKER: 47,
     QWORDSPLITTER: 48,
@@ -80,8 +80,8 @@ var Tc = (function() {
     WAVEFORMGENERATOR: 56,
     HTTPCLIENT: 57,
     ASCIISCREEN: 58,
-    KEYBOARD: 59,
-    FILEINPUT: 60,
+    KEYPAD: 59,
+    FILEROM: 60,
     HALT: 61,
     CIRCUITCLUSTER: 62,
     SCREEN: 63,
@@ -115,10 +115,29 @@ var Tc = (function() {
     INPUTOUTPUT: 91,
     CUSTOM: 92,
     VIRTUALCUSTOM: 93,
-    BYTELESS: 94,
-    BYTEADD: 95,
-    BYTEMUL: 96,
-    FLIPFLOP: 97,
+    QWORDPROGRAM: 94,
+    DELAYBUFFER: 95,
+    VIRTUALDELAYBUFFER: 96,
+    CONSOLE: 97,
+    BYTESHL: 98,
+    BYTESHR: 99,
+    QWORDCONSTANT: 100,
+    QWORDNOT: 101,
+    QWORDOR: 102,
+    QWORDAND: 103,
+    QWORDXOR: 104,
+    QWORDNEG: 105,
+    QWORDADD: 106,
+    QWORDMUL: 107,
+    QWORDEQUAL: 108,
+    QWORDLESSU: 109,
+    QWORDLESSI: 110,
+    QWORDSHL: 111,
+    QWORDSHR: 112,
+    QWORDMUX: 113,
+    QWORDSWITCH: 114,
+    STATEBIT: 115,
+    STATEBYTE: 116,
 
     0: "ERROR",
     1: "FALSE",
@@ -133,8 +152,8 @@ var Tc = (function() {
     10: "NOR",
     11: "XOR",
     12: "XNOR",
-    13: "COUNTER",
-    14: "VIRTUALCOUNTER",
+    13: "BYTECOUNTER",
+    14: "VIRTUALBYTECOUNTER",
     15: "QWORDCOUNTER",
     16: "VIRTUALQWORDCOUNTER",
     17: "RAM",
@@ -152,9 +171,9 @@ var Tc = (function() {
     29: "QWORDREGISTER",
     30: "VIRTUALQWORDREGISTER",
     31: "BYTESWITCH",
-    32: "MUX",
-    33: "DEMUX",
-    34: "BIGGERDEMUX",
+    32: "BYTEMUX",
+    33: "DECODER1",
+    34: "DECODER3",
     35: "BYTECONSTANT",
     36: "BYTENOT",
     37: "BYTEOR",
@@ -164,8 +183,8 @@ var Tc = (function() {
     41: "BYTELESSU",
     42: "BYTELESSI",
     43: "BYTENEG",
-    44: "BYTEADD2",
-    45: "BYTEMUL2",
+    44: "BYTEADD",
+    45: "BYTEMUL",
     46: "BYTESPLITTER",
     47: "BYTEMAKER",
     48: "QWORDSPLITTER",
@@ -179,8 +198,8 @@ var Tc = (function() {
     56: "WAVEFORMGENERATOR",
     57: "HTTPCLIENT",
     58: "ASCIISCREEN",
-    59: "KEYBOARD",
-    60: "FILEINPUT",
+    59: "KEYPAD",
+    60: "FILEROM",
     61: "HALT",
     62: "CIRCUITCLUSTER",
     63: "SCREEN",
@@ -214,10 +233,29 @@ var Tc = (function() {
     91: "INPUTOUTPUT",
     92: "CUSTOM",
     93: "VIRTUALCUSTOM",
-    94: "BYTELESS",
-    95: "BYTEADD",
-    96: "BYTEMUL",
-    97: "FLIPFLOP",
+    94: "QWORDPROGRAM",
+    95: "DELAYBUFFER",
+    96: "VIRTUALDELAYBUFFER",
+    97: "CONSOLE",
+    98: "BYTESHL",
+    99: "BYTESHR",
+    100: "QWORDCONSTANT",
+    101: "QWORDNOT",
+    102: "QWORDOR",
+    103: "QWORDAND",
+    104: "QWORDXOR",
+    105: "QWORDNEG",
+    106: "QWORDADD",
+    107: "QWORDMUL",
+    108: "QWORDEQUAL",
+    109: "QWORDLESSU",
+    110: "QWORDLESSI",
+    111: "QWORDSHL",
+    112: "QWORDSHR",
+    113: "QWORDMUX",
+    114: "QWORDSWITCH",
+    115: "STATEBIT",
+    116: "STATEBYTE",
   });
 
   function Tc(_io, _parent, _root) {
@@ -229,21 +267,24 @@ var Tc = (function() {
   }
   Tc.prototype._read = function() {
     this.magic = this._io.readBytes(1);
-    if (!((KaitaiStream.byteArrayCompare(this.magic, [0]) == 0))) {
-      throw new KaitaiStream.ValidationNotEqualError([0], this.magic, this._io, "/seq/0");
+    if (!((KaitaiStream.byteArrayCompare(this.magic, [1]) == 0))) {
+      throw new KaitaiStream.ValidationNotEqualError([1], this.magic, this._io, "/seq/0");
     }
     this.saveVersion = this._io.readS8le();
     this.nand = this._io.readU4le();
     this.delay = this._io.readU4le();
     this.customVisible = this._io.readU1();
     this.clockSpeed = this._io.readU4le();
-    this.scaleLevel = this._io.readU1();
+    this.nestingLevel = this._io.readU1();
     this.dependcyCount = this._io.readU8le();
     this.dependecies = new Array(this.dependcyCount);
     for (var i = 0; i < this.dependcyCount; i++) {
       this.dependecies[i] = this._io.readU8le();
     }
     this.description = new String(this._io, this, this._root);
+    this.unpacked = this._io.readU1();
+    this.cameraPosition = new Point(this._io, this, this._root);
+    this.cachedDesign = this._io.readU1();
     this.componentCount = this._io.readU8le();
     this.components = new Array(this.componentCount);
     for (var i = 0; i < this.componentCount; i++) {
@@ -255,6 +296,22 @@ var Tc = (function() {
       this.circuits[i] = new Circuit(this._io, this, this._root);
     }
   }
+
+  var Point = Tc.Point = (function() {
+    function Point(_io, _parent, _root) {
+      this._io = _io;
+      this._parent = _parent;
+      this._root = _root || this;
+
+      this._read();
+    }
+    Point.prototype._read = function() {
+      this.x = this._io.readS2le();
+      this.y = this._io.readS2le();
+    }
+
+    return Point;
+  })();
 
   var String = Tc.String = (function() {
     function String(_io, _parent, _root) {
@@ -272,20 +329,61 @@ var Tc = (function() {
     return String;
   })();
 
-  var Point = Tc.Point = (function() {
-    function Point(_io, _parent, _root) {
+  var CircuitPath = Tc.CircuitPath = (function() {
+    function CircuitPath(_io, _parent, _root) {
       this._io = _io;
       this._parent = _parent;
       this._root = _root || this;
 
       this._read();
     }
-    Point.prototype._read = function() {
-      this.x = this._io.readS1();
-      this.y = this._io.readS1();
+    CircuitPath.prototype._read = function() {
+      this.start = new Point(this._io, this, this._root);
+      this.body = []
+      var i = 0;
+      do {
+        var _ = new CircuitSegment(this._io, this, this._root);
+        this.body.push(_);
+        i++;
+      } while (!(_.length == 0));
     }
 
-    return Point;
+    return CircuitPath;
+  })();
+
+  var CircuitSegment = Tc.CircuitSegment = (function() {
+    function CircuitSegment(_io, _parent, _root) {
+      this._io = _io;
+      this._parent = _parent;
+      this._root = _root || this;
+
+      this._read();
+    }
+    CircuitSegment.prototype._read = function() {
+      this.direction = this._io.readBitsIntBe(3);
+      this.length = this._io.readBitsIntBe(5);
+    }
+
+    return CircuitSegment;
+  })();
+
+  var Circuit = Tc.Circuit = (function() {
+    function Circuit(_io, _parent, _root) {
+      this._io = _io;
+      this._parent = _parent;
+      this._root = _root || this;
+
+      this._read();
+    }
+    Circuit.prototype._read = function() {
+      this.permanentId = this._io.readU8le();
+      this.kind = this._io.readU1();
+      this.color = this._io.readU1();
+      this.comment = new String(this._io, this, this._root);
+      this.path = new CircuitPath(this._io, this, this._root);
+    }
+
+    return Circuit;
   })();
 
   var Component = Tc.Component = (function() {
@@ -300,7 +398,7 @@ var Tc = (function() {
       this.kind = this._io.readU2le();
       this.position = new Point(this._io, this, this._root);
       this.rotation = this._io.readU1();
-      this.permanentId = this._io.readU4le();
+      this.permanentId = this._io.readU8le();
       this.customString = new String(this._io, this, this._root);
       if ( (( ((this.kind > 63) && (this.kind < 69)) ) || (this.kind == 94)) ) {
         this.programName = new String(this._io, this, this._root);
@@ -311,29 +409,6 @@ var Tc = (function() {
     }
 
     return Component;
-  })();
-
-  var Circuit = Tc.Circuit = (function() {
-    function Circuit(_io, _parent, _root) {
-      this._io = _io;
-      this._parent = _parent;
-      this._root = _root || this;
-
-      this._read();
-    }
-    Circuit.prototype._read = function() {
-      this.permanentId = this._io.readU4le();
-      this.kind = this._io.readU1();
-      this.color = this._io.readU1();
-      this.comment = new String(this._io, this, this._root);
-      this.pathLength = this._io.readU8le();
-      this.path = new Array(this.pathLength);
-      for (var i = 0; i < this.pathLength; i++) {
-        this.path[i] = new Point(this._io, this, this._root);
-      }
-    }
-
-    return Circuit;
   })();
 
   return Tc;

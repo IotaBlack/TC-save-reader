@@ -13,11 +13,14 @@ digraph {
 			<TR><TD PORT="delay_pos">13</TD><TD PORT="delay_size">4</TD><TD>u4le</TD><TD PORT="delay_type">delay</TD></TR>
 			<TR><TD PORT="custom_visible_pos">17</TD><TD PORT="custom_visible_size">1</TD><TD>u1</TD><TD PORT="custom_visible_type">custom_visible</TD></TR>
 			<TR><TD PORT="clock_speed_pos">18</TD><TD PORT="clock_speed_size">4</TD><TD>u4le</TD><TD PORT="clock_speed_type">clock_speed</TD></TR>
-			<TR><TD PORT="scale_level_pos">22</TD><TD PORT="scale_level_size">1</TD><TD>u1</TD><TD PORT="scale_level_type">scale_level</TD></TR>
+			<TR><TD PORT="nesting_level_pos">22</TD><TD PORT="nesting_level_size">1</TD><TD>u1</TD><TD PORT="nesting_level_type">nesting_level</TD></TR>
 			<TR><TD PORT="dependcy_count_pos">23</TD><TD PORT="dependcy_count_size">8</TD><TD>u8le</TD><TD PORT="dependcy_count_type">dependcy_count</TD></TR>
 			<TR><TD PORT="dependecies_pos">31</TD><TD PORT="dependecies_size">8</TD><TD>u8le</TD><TD PORT="dependecies_type">dependecies</TD></TR>
 			<TR><TD COLSPAN="4" PORT="dependecies__repeat">repeat dependcy_count times</TD></TR>
 			<TR><TD PORT="description_pos">...</TD><TD PORT="description_size">...</TD><TD>String</TD><TD PORT="description_type">description</TD></TR>
+			<TR><TD PORT="unpacked_pos">...</TD><TD PORT="unpacked_size">1</TD><TD>u1</TD><TD PORT="unpacked_type">unpacked</TD></TR>
+			<TR><TD PORT="camera_position_pos">...</TD><TD PORT="camera_position_size">4</TD><TD>Point</TD><TD PORT="camera_position_type">camera_position</TD></TR>
+			<TR><TD PORT="cached_design_pos">...</TD><TD PORT="cached_design_size">1</TD><TD>u1</TD><TD PORT="cached_design_type">cached_design</TD></TR>
 			<TR><TD PORT="component_count_pos">...</TD><TD PORT="component_count_size">8</TD><TD>u8le</TD><TD PORT="component_count_type">component_count</TD></TR>
 			<TR><TD PORT="components_pos">...</TD><TD PORT="components_size">...</TD><TD>Component</TD><TD PORT="components_type">components</TD></TR>
 			<TR><TD COLSPAN="4" PORT="components__repeat">repeat component_count times</TD></TR>
@@ -25,6 +28,16 @@ digraph {
 			<TR><TD PORT="circuits_pos">...</TD><TD PORT="circuits_size">...</TD><TD>Circuit</TD><TD PORT="circuits_type">circuits</TD></TR>
 			<TR><TD COLSPAN="4" PORT="circuits__repeat">repeat circuit_count times</TD></TR>
 		</TABLE>>];
+		subgraph cluster__point {
+			label="Tc::Point";
+			graph[style=dotted];
+
+			point__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="x_pos">0</TD><TD PORT="x_size">2</TD><TD>s2le</TD><TD PORT="x_type">x</TD></TR>
+				<TR><TD PORT="y_pos">2</TD><TD PORT="y_size">2</TD><TD>s2le</TD><TD PORT="y_type">y</TD></TR>
+			</TABLE>>];
+		}
 		subgraph cluster__string {
 			label="Tc::String";
 			graph[style=dotted];
@@ -35,14 +48,38 @@ digraph {
 				<TR><TD PORT="content_pos">8</TD><TD PORT="content_size">len</TD><TD>str(utf8)</TD><TD PORT="content_type">content</TD></TR>
 			</TABLE>>];
 		}
-		subgraph cluster__point {
-			label="Tc::Point";
+		subgraph cluster__circuit_path {
+			label="Tc::CircuitPath";
 			graph[style=dotted];
 
-			point__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			circuit_path__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
 				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
-				<TR><TD PORT="x_pos">0</TD><TD PORT="x_size">1</TD><TD>s1</TD><TD PORT="x_type">x</TD></TR>
-				<TR><TD PORT="y_pos">1</TD><TD PORT="y_size">1</TD><TD>s1</TD><TD PORT="y_type">y</TD></TR>
+				<TR><TD PORT="start_pos">0</TD><TD PORT="start_size">4</TD><TD>Point</TD><TD PORT="start_type">start</TD></TR>
+				<TR><TD PORT="body_pos">4</TD><TD PORT="body_size">1</TD><TD>CircuitSegment</TD><TD PORT="body_type">body</TD></TR>
+				<TR><TD COLSPAN="4" PORT="body__repeat">repeat until _.length == 0</TD></TR>
+			</TABLE>>];
+		}
+		subgraph cluster__circuit_segment {
+			label="Tc::CircuitSegment";
+			graph[style=dotted];
+
+			circuit_segment__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="direction_pos">0</TD><TD PORT="direction_size">3b</TD><TD>b3</TD><TD PORT="direction_type">direction</TD></TR>
+				<TR><TD PORT="length_pos">0:3</TD><TD PORT="length_size">5b</TD><TD>b5</TD><TD PORT="length_type">length</TD></TR>
+			</TABLE>>];
+		}
+		subgraph cluster__circuit {
+			label="Tc::Circuit";
+			graph[style=dotted];
+
+			circuit__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="permanent_id_pos">0</TD><TD PORT="permanent_id_size">8</TD><TD>u8le</TD><TD PORT="permanent_id_type">permanent_id</TD></TR>
+				<TR><TD PORT="kind_pos">8</TD><TD PORT="kind_size">1</TD><TD>u1?CircuitKind</TD><TD PORT="kind_type">kind</TD></TR>
+				<TR><TD PORT="color_pos">9</TD><TD PORT="color_size">1</TD><TD>u1</TD><TD PORT="color_type">color</TD></TR>
+				<TR><TD PORT="comment_pos">10</TD><TD PORT="comment_size">...</TD><TD>String</TD><TD PORT="comment_type">comment</TD></TR>
+				<TR><TD PORT="path_pos">...</TD><TD PORT="path_size">...</TD><TD>CircuitPath</TD><TD PORT="path_type">path</TD></TR>
 			</TABLE>>];
 		}
 		subgraph cluster__component {
@@ -52,41 +89,29 @@ digraph {
 			component__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
 				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
 				<TR><TD PORT="kind_pos">0</TD><TD PORT="kind_size">2</TD><TD>u2le?ComponentKind</TD><TD PORT="kind_type">kind</TD></TR>
-				<TR><TD PORT="position_pos">2</TD><TD PORT="position_size">2</TD><TD>Point</TD><TD PORT="position_type">position</TD></TR>
-				<TR><TD PORT="rotation_pos">4</TD><TD PORT="rotation_size">1</TD><TD>u1</TD><TD PORT="rotation_type">rotation</TD></TR>
-				<TR><TD PORT="permanent_id_pos">5</TD><TD PORT="permanent_id_size">4</TD><TD>u4le</TD><TD PORT="permanent_id_type">permanent_id</TD></TR>
-				<TR><TD PORT="custom_string_pos">9</TD><TD PORT="custom_string_size">...</TD><TD>String</TD><TD PORT="custom_string_type">custom_string</TD></TR>
+				<TR><TD PORT="position_pos">2</TD><TD PORT="position_size">4</TD><TD>Point</TD><TD PORT="position_type">position</TD></TR>
+				<TR><TD PORT="rotation_pos">6</TD><TD PORT="rotation_size">1</TD><TD>u1</TD><TD PORT="rotation_type">rotation</TD></TR>
+				<TR><TD PORT="permanent_id_pos">7</TD><TD PORT="permanent_id_size">8</TD><TD>u8le</TD><TD PORT="permanent_id_type">permanent_id</TD></TR>
+				<TR><TD PORT="custom_string_pos">15</TD><TD PORT="custom_string_size">...</TD><TD>String</TD><TD PORT="custom_string_type">custom_string</TD></TR>
 				<TR><TD PORT="program_name_pos">...</TD><TD PORT="program_name_size">...</TD><TD>String</TD><TD PORT="program_name_type">program_name</TD></TR>
 				<TR><TD PORT="custom_id_pos">...</TD><TD PORT="custom_id_size">8</TD><TD>u8le</TD><TD PORT="custom_id_type">custom_id</TD></TR>
-			</TABLE>>];
-		}
-		subgraph cluster__circuit {
-			label="Tc::Circuit";
-			graph[style=dotted];
-
-			circuit__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
-				<TR><TD PORT="permanent_id_pos">0</TD><TD PORT="permanent_id_size">4</TD><TD>u4le</TD><TD PORT="permanent_id_type">permanent_id</TD></TR>
-				<TR><TD PORT="kind_pos">4</TD><TD PORT="kind_size">1</TD><TD>u1?CircuitKind</TD><TD PORT="kind_type">kind</TD></TR>
-				<TR><TD PORT="color_pos">5</TD><TD PORT="color_size">1</TD><TD>u1</TD><TD PORT="color_type">color</TD></TR>
-				<TR><TD PORT="comment_pos">6</TD><TD PORT="comment_size">...</TD><TD>String</TD><TD PORT="comment_type">comment</TD></TR>
-				<TR><TD PORT="path_length_pos">...</TD><TD PORT="path_length_size">8</TD><TD>u8le</TD><TD PORT="path_length_type">path_length</TD></TR>
-				<TR><TD PORT="path_pos">...</TD><TD PORT="path_size">2</TD><TD>Point</TD><TD PORT="path_type">path</TD></TR>
-				<TR><TD COLSPAN="4" PORT="path__repeat">repeat path_length times</TD></TR>
 			</TABLE>>];
 		}
 	}
 	tc__seq:dependcy_count_type -> tc__seq:dependecies__repeat [color="#404040"];
 	tc__seq:description_type -> string__seq [style=bold];
+	tc__seq:camera_position_type -> point__seq [style=bold];
 	tc__seq:components_type -> component__seq [style=bold];
 	tc__seq:component_count_type -> tc__seq:components__repeat [color="#404040"];
 	tc__seq:circuits_type -> circuit__seq [style=bold];
 	tc__seq:circuit_count_type -> tc__seq:circuits__repeat [color="#404040"];
 	string__seq:len_type -> string__seq:content_size [color="#404040"];
+	circuit_path__seq:start_type -> point__seq [style=bold];
+	circuit_path__seq:body_type -> circuit_segment__seq [style=bold];
+	circuit_segment__seq:length_type -> circuit_path__seq:body__repeat [color="#404040"];
+	circuit__seq:comment_type -> string__seq [style=bold];
+	circuit__seq:path_type -> circuit_path__seq [style=bold];
 	component__seq:position_type -> point__seq [style=bold];
 	component__seq:custom_string_type -> string__seq [style=bold];
 	component__seq:program_name_type -> string__seq [style=bold];
-	circuit__seq:comment_type -> string__seq [style=bold];
-	circuit__seq:path_type -> point__seq [style=bold];
-	circuit__seq:path_length_type -> circuit__seq:path__repeat [color="#404040"];
 }

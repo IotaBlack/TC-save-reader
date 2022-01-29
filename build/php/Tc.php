@@ -10,15 +10,15 @@ namespace {
 
         private function _read() {
             $this->_m_magic = $this->_io->readBytes(1);
-            if (!($this->magic() == "\x00")) {
-                throw new \Kaitai\Struct\Error\ValidationNotEqualError("\x00", $this->magic(), $this->_io(), "/seq/0");
+            if (!($this->magic() == "\x01")) {
+                throw new \Kaitai\Struct\Error\ValidationNotEqualError("\x01", $this->magic(), $this->_io(), "/seq/0");
             }
             $this->_m_saveVersion = $this->_io->readS8le();
             $this->_m_nand = $this->_io->readU4le();
             $this->_m_delay = $this->_io->readU4le();
             $this->_m_customVisible = $this->_io->readU1();
             $this->_m_clockSpeed = $this->_io->readU4le();
-            $this->_m_scaleLevel = $this->_io->readU1();
+            $this->_m_nestingLevel = $this->_io->readU1();
             $this->_m_dependcyCount = $this->_io->readU8le();
             $this->_m_dependecies = [];
             $n = $this->dependcyCount();
@@ -26,6 +26,9 @@ namespace {
                 $this->_m_dependecies[] = $this->_io->readU8le();
             }
             $this->_m_description = new \Tc\String($this->_io, $this, $this->_root);
+            $this->_m_unpacked = $this->_io->readU1();
+            $this->_m_cameraPosition = new \Tc\Point($this->_io, $this, $this->_root);
+            $this->_m_cachedDesign = $this->_io->readU1();
             $this->_m_componentCount = $this->_io->readU8le();
             $this->_m_components = [];
             $n = $this->componentCount();
@@ -45,10 +48,13 @@ namespace {
         protected $_m_delay;
         protected $_m_customVisible;
         protected $_m_clockSpeed;
-        protected $_m_scaleLevel;
+        protected $_m_nestingLevel;
         protected $_m_dependcyCount;
         protected $_m_dependecies;
         protected $_m_description;
+        protected $_m_unpacked;
+        protected $_m_cameraPosition;
+        protected $_m_cachedDesign;
         protected $_m_componentCount;
         protected $_m_components;
         protected $_m_circuitCount;
@@ -59,14 +65,35 @@ namespace {
         public function delay() { return $this->_m_delay; }
         public function customVisible() { return $this->_m_customVisible; }
         public function clockSpeed() { return $this->_m_clockSpeed; }
-        public function scaleLevel() { return $this->_m_scaleLevel; }
+        public function nestingLevel() { return $this->_m_nestingLevel; }
         public function dependcyCount() { return $this->_m_dependcyCount; }
         public function dependecies() { return $this->_m_dependecies; }
         public function description() { return $this->_m_description; }
+        public function unpacked() { return $this->_m_unpacked; }
+        public function cameraPosition() { return $this->_m_cameraPosition; }
+        public function cachedDesign() { return $this->_m_cachedDesign; }
         public function componentCount() { return $this->_m_componentCount; }
         public function components() { return $this->_m_components; }
         public function circuitCount() { return $this->_m_circuitCount; }
         public function circuits() { return $this->_m_circuits; }
+    }
+}
+
+namespace Tc {
+    class Point extends \Kaitai\Struct\Struct {
+        public function __construct(\Kaitai\Struct\Stream $_io, \Kaitai\Struct\Struct $_parent = null, \Tc $_root = null) {
+            parent::__construct($_io, $_parent, $_root);
+            $this->_read();
+        }
+
+        private function _read() {
+            $this->_m_x = $this->_io->readS2le();
+            $this->_m_y = $this->_io->readS2le();
+        }
+        protected $_m_x;
+        protected $_m_y;
+        public function x() { return $this->_m_x; }
+        public function y() { return $this->_m_y; }
     }
 }
 
@@ -89,20 +116,71 @@ namespace Tc {
 }
 
 namespace Tc {
-    class Point extends \Kaitai\Struct\Struct {
-        public function __construct(\Kaitai\Struct\Stream $_io, \Kaitai\Struct\Struct $_parent = null, \Tc $_root = null) {
+    class CircuitPath extends \Kaitai\Struct\Struct {
+        public function __construct(\Kaitai\Struct\Stream $_io, \Tc\Circuit $_parent = null, \Tc $_root = null) {
             parent::__construct($_io, $_parent, $_root);
             $this->_read();
         }
 
         private function _read() {
-            $this->_m_x = $this->_io->readS1();
-            $this->_m_y = $this->_io->readS1();
+            $this->_m_start = new \Tc\Point($this->_io, $this, $this->_root);
+            $this->_m_body = [];
+            $i = 0;
+            do {
+                $_ = new \Tc\CircuitSegment($this->_io, $this, $this->_root);
+                $this->_m_body[] = $_;
+                $i++;
+            } while (!($_->length() == 0));
         }
-        protected $_m_x;
-        protected $_m_y;
-        public function x() { return $this->_m_x; }
-        public function y() { return $this->_m_y; }
+        protected $_m_start;
+        protected $_m_body;
+        public function start() { return $this->_m_start; }
+        public function body() { return $this->_m_body; }
+    }
+}
+
+namespace Tc {
+    class CircuitSegment extends \Kaitai\Struct\Struct {
+        public function __construct(\Kaitai\Struct\Stream $_io, \Tc\CircuitPath $_parent = null, \Tc $_root = null) {
+            parent::__construct($_io, $_parent, $_root);
+            $this->_read();
+        }
+
+        private function _read() {
+            $this->_m_direction = $this->_io->readBitsIntBe(3);
+            $this->_m_length = $this->_io->readBitsIntBe(5);
+        }
+        protected $_m_direction;
+        protected $_m_length;
+        public function direction() { return $this->_m_direction; }
+        public function length() { return $this->_m_length; }
+    }
+}
+
+namespace Tc {
+    class Circuit extends \Kaitai\Struct\Struct {
+        public function __construct(\Kaitai\Struct\Stream $_io, \Tc $_parent = null, \Tc $_root = null) {
+            parent::__construct($_io, $_parent, $_root);
+            $this->_read();
+        }
+
+        private function _read() {
+            $this->_m_permanentId = $this->_io->readU8le();
+            $this->_m_kind = $this->_io->readU1();
+            $this->_m_color = $this->_io->readU1();
+            $this->_m_comment = new \Tc\String($this->_io, $this, $this->_root);
+            $this->_m_path = new \Tc\CircuitPath($this->_io, $this, $this->_root);
+        }
+        protected $_m_permanentId;
+        protected $_m_kind;
+        protected $_m_color;
+        protected $_m_comment;
+        protected $_m_path;
+        public function permanentId() { return $this->_m_permanentId; }
+        public function kind() { return $this->_m_kind; }
+        public function color() { return $this->_m_color; }
+        public function comment() { return $this->_m_comment; }
+        public function path() { return $this->_m_path; }
     }
 }
 
@@ -117,7 +195,7 @@ namespace Tc {
             $this->_m_kind = $this->_io->readU2le();
             $this->_m_position = new \Tc\Point($this->_io, $this, $this->_root);
             $this->_m_rotation = $this->_io->readU1();
-            $this->_m_permanentId = $this->_io->readU4le();
+            $this->_m_permanentId = $this->_io->readU8le();
             $this->_m_customString = new \Tc\String($this->_io, $this, $this->_root);
             if ( (( (($this->kind() > 63) && ($this->kind() < 69)) ) || ($this->kind() == 94)) ) {
                 $this->_m_programName = new \Tc\String($this->_io, $this, $this->_root);
@@ -144,40 +222,6 @@ namespace Tc {
 }
 
 namespace Tc {
-    class Circuit extends \Kaitai\Struct\Struct {
-        public function __construct(\Kaitai\Struct\Stream $_io, \Tc $_parent = null, \Tc $_root = null) {
-            parent::__construct($_io, $_parent, $_root);
-            $this->_read();
-        }
-
-        private function _read() {
-            $this->_m_permanentId = $this->_io->readU4le();
-            $this->_m_kind = $this->_io->readU1();
-            $this->_m_color = $this->_io->readU1();
-            $this->_m_comment = new \Tc\String($this->_io, $this, $this->_root);
-            $this->_m_pathLength = $this->_io->readU8le();
-            $this->_m_path = [];
-            $n = $this->pathLength();
-            for ($i = 0; $i < $n; $i++) {
-                $this->_m_path[] = new \Tc\Point($this->_io, $this, $this->_root);
-            }
-        }
-        protected $_m_permanentId;
-        protected $_m_kind;
-        protected $_m_color;
-        protected $_m_comment;
-        protected $_m_pathLength;
-        protected $_m_path;
-        public function permanentId() { return $this->_m_permanentId; }
-        public function kind() { return $this->_m_kind; }
-        public function color() { return $this->_m_color; }
-        public function comment() { return $this->_m_comment; }
-        public function pathLength() { return $this->_m_pathLength; }
-        public function path() { return $this->_m_path; }
-    }
-}
-
-namespace Tc {
     class CircuitKind {
         const CK_BIT = 0;
         const CK_BYTE = 1;
@@ -200,8 +244,8 @@ namespace Tc {
         const NOR = 10;
         const XOR = 11;
         const XNOR = 12;
-        const COUNTER = 13;
-        const VIRTUALCOUNTER = 14;
+        const BYTECOUNTER = 13;
+        const VIRTUALBYTECOUNTER = 14;
         const QWORDCOUNTER = 15;
         const VIRTUALQWORDCOUNTER = 16;
         const RAM = 17;
@@ -219,9 +263,9 @@ namespace Tc {
         const QWORDREGISTER = 29;
         const VIRTUALQWORDREGISTER = 30;
         const BYTESWITCH = 31;
-        const MUX = 32;
-        const DEMUX = 33;
-        const BIGGERDEMUX = 34;
+        const BYTEMUX = 32;
+        const DECODER1 = 33;
+        const DECODER3 = 34;
         const BYTECONSTANT = 35;
         const BYTENOT = 36;
         const BYTEOR = 37;
@@ -231,8 +275,8 @@ namespace Tc {
         const BYTELESSU = 41;
         const BYTELESSI = 42;
         const BYTENEG = 43;
-        const BYTEADD2 = 44;
-        const BYTEMUL2 = 45;
+        const BYTEADD = 44;
+        const BYTEMUL = 45;
         const BYTESPLITTER = 46;
         const BYTEMAKER = 47;
         const QWORDSPLITTER = 48;
@@ -246,8 +290,8 @@ namespace Tc {
         const WAVEFORMGENERATOR = 56;
         const HTTPCLIENT = 57;
         const ASCIISCREEN = 58;
-        const KEYBOARD = 59;
-        const FILEINPUT = 60;
+        const KEYPAD = 59;
+        const FILEROM = 60;
         const HALT = 61;
         const CIRCUITCLUSTER = 62;
         const SCREEN = 63;
@@ -281,9 +325,28 @@ namespace Tc {
         const INPUTOUTPUT = 91;
         const CUSTOM = 92;
         const VIRTUALCUSTOM = 93;
-        const BYTELESS = 94;
-        const BYTEADD = 95;
-        const BYTEMUL = 96;
-        const FLIPFLOP = 97;
+        const QWORDPROGRAM = 94;
+        const DELAYBUFFER = 95;
+        const VIRTUALDELAYBUFFER = 96;
+        const CONSOLE = 97;
+        const BYTESHL = 98;
+        const BYTESHR = 99;
+        const QWORDCONSTANT = 100;
+        const QWORDNOT = 101;
+        const QWORDOR = 102;
+        const QWORDAND = 103;
+        const QWORDXOR = 104;
+        const QWORDNEG = 105;
+        const QWORDADD = 106;
+        const QWORDMUL = 107;
+        const QWORDEQUAL = 108;
+        const QWORDLESSU = 109;
+        const QWORDLESSI = 110;
+        const QWORDSHL = 111;
+        const QWORDSHR = 112;
+        const QWORDMUX = 113;
+        const QWORDSWITCH = 114;
+        const STATEBIT = 115;
+        const STATEBYTE = 116;
     }
 }

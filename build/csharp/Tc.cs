@@ -34,8 +34,8 @@ namespace Kaitai
             Nor = 10,
             Xor = 11,
             Xnor = 12,
-            Counter = 13,
-            Virtualcounter = 14,
+            Bytecounter = 13,
+            Virtualbytecounter = 14,
             Qwordcounter = 15,
             Virtualqwordcounter = 16,
             Ram = 17,
@@ -53,9 +53,9 @@ namespace Kaitai
             Qwordregister = 29,
             Virtualqwordregister = 30,
             Byteswitch = 31,
-            Mux = 32,
-            Demux = 33,
-            Biggerdemux = 34,
+            Bytemux = 32,
+            Decoder1 = 33,
+            Decoder3 = 34,
             Byteconstant = 35,
             Bytenot = 36,
             Byteor = 37,
@@ -65,8 +65,8 @@ namespace Kaitai
             Bytelessu = 41,
             Bytelessi = 42,
             Byteneg = 43,
-            Byteadd2 = 44,
-            Bytemul2 = 45,
+            Byteadd = 44,
+            Bytemul = 45,
             Bytesplitter = 46,
             Bytemaker = 47,
             Qwordsplitter = 48,
@@ -80,8 +80,8 @@ namespace Kaitai
             Waveformgenerator = 56,
             Httpclient = 57,
             Asciiscreen = 58,
-            Keyboard = 59,
-            Fileinput = 60,
+            Keypad = 59,
+            Filerom = 60,
             Halt = 61,
             Circuitcluster = 62,
             Screen = 63,
@@ -115,10 +115,29 @@ namespace Kaitai
             Inputoutput = 91,
             Custom = 92,
             Virtualcustom = 93,
-            Byteless = 94,
-            Byteadd = 95,
-            Bytemul = 96,
-            Flipflop = 97,
+            Qwordprogram = 94,
+            Delaybuffer = 95,
+            Virtualdelaybuffer = 96,
+            Console = 97,
+            Byteshl = 98,
+            Byteshr = 99,
+            Qwordconstant = 100,
+            Qwordnot = 101,
+            Qwordor = 102,
+            Qwordand = 103,
+            Qwordxor = 104,
+            Qwordneg = 105,
+            Qwordadd = 106,
+            Qwordmul = 107,
+            Qwordequal = 108,
+            Qwordlessu = 109,
+            Qwordlessi = 110,
+            Qwordshl = 111,
+            Qwordshr = 112,
+            Qwordmux = 113,
+            Qwordswitch = 114,
+            Statebit = 115,
+            Statebyte = 116,
         }
         public Tc(KaitaiStream p__io, KaitaiStruct p__parent = null, Tc p__root = null) : base(p__io)
         {
@@ -129,16 +148,16 @@ namespace Kaitai
         private void _read()
         {
             _magic = m_io.ReadBytes(1);
-            if (!((KaitaiStream.ByteArrayCompare(Magic, new byte[] { 0 }) == 0)))
+            if (!((KaitaiStream.ByteArrayCompare(Magic, new byte[] { 1 }) == 0)))
             {
-                throw new ValidationNotEqualError(new byte[] { 0 }, Magic, M_Io, "/seq/0");
+                throw new ValidationNotEqualError(new byte[] { 1 }, Magic, M_Io, "/seq/0");
             }
             _saveVersion = m_io.ReadS8le();
             _nand = m_io.ReadU4le();
             _delay = m_io.ReadU4le();
             _customVisible = m_io.ReadU1();
             _clockSpeed = m_io.ReadU4le();
-            _scaleLevel = m_io.ReadU1();
+            _nestingLevel = m_io.ReadU1();
             _dependcyCount = m_io.ReadU8le();
             _dependecies = new List<ulong>((int) (DependcyCount));
             for (var i = 0; i < DependcyCount; i++)
@@ -146,6 +165,9 @@ namespace Kaitai
                 _dependecies.Add(m_io.ReadU8le());
             }
             _description = new String(m_io, this, m_root);
+            _unpacked = m_io.ReadU1();
+            _cameraPosition = new Point(m_io, this, m_root);
+            _cachedDesign = m_io.ReadU1();
             _componentCount = m_io.ReadU8le();
             _components = new List<Component>((int) (ComponentCount));
             for (var i = 0; i < ComponentCount; i++)
@@ -158,6 +180,33 @@ namespace Kaitai
             {
                 _circuits.Add(new Circuit(m_io, this, m_root));
             }
+        }
+        public partial class Point : KaitaiStruct
+        {
+            public static Point FromFile(string fileName)
+            {
+                return new Point(new KaitaiStream(fileName));
+            }
+
+            public Point(KaitaiStream p__io, KaitaiStruct p__parent = null, Tc p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _x = m_io.ReadS2le();
+                _y = m_io.ReadS2le();
+            }
+            private short _x;
+            private short _y;
+            private Tc m_root;
+            private KaitaiStruct m_parent;
+            public short X { get { return _x; } }
+            public short Y { get { return _y; } }
+            public Tc M_Root { get { return m_root; } }
+            public KaitaiStruct M_Parent { get { return m_parent; } }
         }
         public partial class String : KaitaiStruct
         {
@@ -186,14 +235,14 @@ namespace Kaitai
             public Tc M_Root { get { return m_root; } }
             public KaitaiStruct M_Parent { get { return m_parent; } }
         }
-        public partial class Point : KaitaiStruct
+        public partial class CircuitPath : KaitaiStruct
         {
-            public static Point FromFile(string fileName)
+            public static CircuitPath FromFile(string fileName)
             {
-                return new Point(new KaitaiStream(fileName));
+                return new CircuitPath(new KaitaiStream(fileName));
             }
 
-            public Point(KaitaiStream p__io, KaitaiStruct p__parent = null, Tc p__root = null) : base(p__io)
+            public CircuitPath(KaitaiStream p__io, Tc.Circuit p__parent = null, Tc p__root = null) : base(p__io)
             {
                 m_parent = p__parent;
                 m_root = p__root;
@@ -201,17 +250,89 @@ namespace Kaitai
             }
             private void _read()
             {
-                _x = m_io.ReadS1();
-                _y = m_io.ReadS1();
+                _start = new Point(m_io, this, m_root);
+                _body = new List<CircuitSegment>();
+                {
+                    var i = 0;
+                    CircuitSegment M_;
+                    do {
+                        M_ = new CircuitSegment(m_io, this, m_root);
+                        _body.Add(M_);
+                        i++;
+                    } while (!(M_.Length == 0));
+                }
             }
-            private sbyte _x;
-            private sbyte _y;
+            private Point _start;
+            private List<CircuitSegment> _body;
             private Tc m_root;
-            private KaitaiStruct m_parent;
-            public sbyte X { get { return _x; } }
-            public sbyte Y { get { return _y; } }
+            private Tc.Circuit m_parent;
+            public Point Start { get { return _start; } }
+            public List<CircuitSegment> Body { get { return _body; } }
             public Tc M_Root { get { return m_root; } }
-            public KaitaiStruct M_Parent { get { return m_parent; } }
+            public Tc.Circuit M_Parent { get { return m_parent; } }
+        }
+        public partial class CircuitSegment : KaitaiStruct
+        {
+            public static CircuitSegment FromFile(string fileName)
+            {
+                return new CircuitSegment(new KaitaiStream(fileName));
+            }
+
+            public CircuitSegment(KaitaiStream p__io, Tc.CircuitPath p__parent = null, Tc p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _direction = m_io.ReadBitsIntBe(3);
+                _length = m_io.ReadBitsIntBe(5);
+            }
+            private ulong _direction;
+            private ulong _length;
+            private Tc m_root;
+            private Tc.CircuitPath m_parent;
+            public ulong Direction { get { return _direction; } }
+            public ulong Length { get { return _length; } }
+            public Tc M_Root { get { return m_root; } }
+            public Tc.CircuitPath M_Parent { get { return m_parent; } }
+        }
+        public partial class Circuit : KaitaiStruct
+        {
+            public static Circuit FromFile(string fileName)
+            {
+                return new Circuit(new KaitaiStream(fileName));
+            }
+
+            public Circuit(KaitaiStream p__io, Tc p__parent = null, Tc p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _permanentId = m_io.ReadU8le();
+                _kind = ((Tc.CircuitKind) m_io.ReadU1());
+                _color = m_io.ReadU1();
+                _comment = new String(m_io, this, m_root);
+                _path = new CircuitPath(m_io, this, m_root);
+            }
+            private ulong _permanentId;
+            private CircuitKind _kind;
+            private byte _color;
+            private String _comment;
+            private CircuitPath _path;
+            private Tc m_root;
+            private Tc m_parent;
+            public ulong PermanentId { get { return _permanentId; } }
+            public CircuitKind Kind { get { return _kind; } }
+            public byte Color { get { return _color; } }
+            public String Comment { get { return _comment; } }
+            public CircuitPath Path { get { return _path; } }
+            public Tc M_Root { get { return m_root; } }
+            public Tc M_Parent { get { return m_parent; } }
         }
         public partial class Component : KaitaiStruct
         {
@@ -231,7 +352,7 @@ namespace Kaitai
                 _kind = ((Tc.ComponentKind) m_io.ReadU2le());
                 _position = new Point(m_io, this, m_root);
                 _rotation = m_io.ReadU1();
-                _permanentId = m_io.ReadU4le();
+                _permanentId = m_io.ReadU8le();
                 _customString = new String(m_io, this, m_root);
                 if ( (( ((Kind > 63) && (Kind < 69)) ) || (Kind == 94)) ) {
                     _programName = new String(m_io, this, m_root);
@@ -243,7 +364,7 @@ namespace Kaitai
             private ComponentKind _kind;
             private Point _position;
             private byte _rotation;
-            private uint _permanentId;
+            private ulong _permanentId;
             private String _customString;
             private String _programName;
             private ulong? _customId;
@@ -252,53 +373,10 @@ namespace Kaitai
             public ComponentKind Kind { get { return _kind; } }
             public Point Position { get { return _position; } }
             public byte Rotation { get { return _rotation; } }
-            public uint PermanentId { get { return _permanentId; } }
+            public ulong PermanentId { get { return _permanentId; } }
             public String CustomString { get { return _customString; } }
             public String ProgramName { get { return _programName; } }
             public ulong? CustomId { get { return _customId; } }
-            public Tc M_Root { get { return m_root; } }
-            public Tc M_Parent { get { return m_parent; } }
-        }
-        public partial class Circuit : KaitaiStruct
-        {
-            public static Circuit FromFile(string fileName)
-            {
-                return new Circuit(new KaitaiStream(fileName));
-            }
-
-            public Circuit(KaitaiStream p__io, Tc p__parent = null, Tc p__root = null) : base(p__io)
-            {
-                m_parent = p__parent;
-                m_root = p__root;
-                _read();
-            }
-            private void _read()
-            {
-                _permanentId = m_io.ReadU4le();
-                _kind = ((Tc.CircuitKind) m_io.ReadU1());
-                _color = m_io.ReadU1();
-                _comment = new String(m_io, this, m_root);
-                _pathLength = m_io.ReadU8le();
-                _path = new List<Point>((int) (PathLength));
-                for (var i = 0; i < PathLength; i++)
-                {
-                    _path.Add(new Point(m_io, this, m_root));
-                }
-            }
-            private uint _permanentId;
-            private CircuitKind _kind;
-            private byte _color;
-            private String _comment;
-            private ulong _pathLength;
-            private List<Point> _path;
-            private Tc m_root;
-            private Tc m_parent;
-            public uint PermanentId { get { return _permanentId; } }
-            public CircuitKind Kind { get { return _kind; } }
-            public byte Color { get { return _color; } }
-            public String Comment { get { return _comment; } }
-            public ulong PathLength { get { return _pathLength; } }
-            public List<Point> Path { get { return _path; } }
             public Tc M_Root { get { return m_root; } }
             public Tc M_Parent { get { return m_parent; } }
         }
@@ -308,10 +386,13 @@ namespace Kaitai
         private uint _delay;
         private byte _customVisible;
         private uint _clockSpeed;
-        private byte _scaleLevel;
+        private byte _nestingLevel;
         private ulong _dependcyCount;
         private List<ulong> _dependecies;
         private String _description;
+        private byte _unpacked;
+        private Point _cameraPosition;
+        private byte _cachedDesign;
         private ulong _componentCount;
         private List<Component> _components;
         private ulong _circuitCount;
@@ -324,10 +405,13 @@ namespace Kaitai
         public uint Delay { get { return _delay; } }
         public byte CustomVisible { get { return _customVisible; } }
         public uint ClockSpeed { get { return _clockSpeed; } }
-        public byte ScaleLevel { get { return _scaleLevel; } }
+        public byte NestingLevel { get { return _nestingLevel; } }
         public ulong DependcyCount { get { return _dependcyCount; } }
         public List<ulong> Dependecies { get { return _dependecies; } }
         public String Description { get { return _description; } }
+        public byte Unpacked { get { return _unpacked; } }
+        public Point CameraPosition { get { return _cameraPosition; } }
+        public byte CachedDesign { get { return _cachedDesign; } }
         public ulong ComponentCount { get { return _componentCount; } }
         public List<Component> Components { get { return _components; } }
         public ulong CircuitCount { get { return _circuitCount; } }

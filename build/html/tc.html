@@ -66,7 +66,7 @@
 <tr>
 <td>22</td>
 <td>...</td>
-<td>scale_level</td>
+<td>nesting_level</td>
 <td>u1</td>
 <td></td>
 </tr>
@@ -89,6 +89,27 @@
 <td>...</td>
 <td>description</td>
 <td><a href="#type-tc-string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td>???</td>
+<td>...</td>
+<td>unpacked</td>
+<td>u1</td>
+<td></td>
+</tr>
+<tr>
+<td>???</td>
+<td>...</td>
+<td>camera_position</td>
+<td><a href="#type-tc-point">Point</a></td>
+<td></td>
+</tr>
+<tr>
+<td>???</td>
+<td>...</td>
+<td>cached_design</td>
+<td>u1</td>
 <td></td>
 </tr>
 <tr>
@@ -184,10 +205,10 @@
 <td>12</td><td>xnor</td><td></td></tr>
 </tr>
 <tr>
-<td>13</td><td>counter</td><td></td></tr>
+<td>13</td><td>bytecounter</td><td></td></tr>
 </tr>
 <tr>
-<td>14</td><td>virtualcounter</td><td></td></tr>
+<td>14</td><td>virtualbytecounter</td><td></td></tr>
 </tr>
 <tr>
 <td>15</td><td>qwordcounter</td><td></td></tr>
@@ -241,13 +262,13 @@
 <td>31</td><td>byteswitch</td><td></td></tr>
 </tr>
 <tr>
-<td>32</td><td>mux</td><td></td></tr>
+<td>32</td><td>bytemux</td><td></td></tr>
 </tr>
 <tr>
-<td>33</td><td>demux</td><td></td></tr>
+<td>33</td><td>decoder1</td><td></td></tr>
 </tr>
 <tr>
-<td>34</td><td>biggerdemux</td><td></td></tr>
+<td>34</td><td>decoder3</td><td></td></tr>
 </tr>
 <tr>
 <td>35</td><td>byteconstant</td><td></td></tr>
@@ -277,10 +298,10 @@
 <td>43</td><td>byteneg</td><td></td></tr>
 </tr>
 <tr>
-<td>44</td><td>byteadd2</td><td></td></tr>
+<td>44</td><td>byteadd</td><td></td></tr>
 </tr>
 <tr>
-<td>45</td><td>bytemul2</td><td></td></tr>
+<td>45</td><td>bytemul</td><td></td></tr>
 </tr>
 <tr>
 <td>46</td><td>bytesplitter</td><td></td></tr>
@@ -322,10 +343,10 @@
 <td>58</td><td>asciiscreen</td><td></td></tr>
 </tr>
 <tr>
-<td>59</td><td>keyboard</td><td></td></tr>
+<td>59</td><td>keypad</td><td></td></tr>
 </tr>
 <tr>
-<td>60</td><td>fileinput</td><td></td></tr>
+<td>60</td><td>filerom</td><td></td></tr>
 </tr>
 <tr>
 <td>61</td><td>halt</td><td></td></tr>
@@ -427,16 +448,93 @@
 <td>93</td><td>virtualcustom</td><td></td></tr>
 </tr>
 <tr>
-<td>94</td><td>byteless</td><td></td></tr>
+<td>94</td><td>qwordprogram</td><td></td></tr>
 </tr>
 <tr>
-<td>95</td><td>byteadd</td><td></td></tr>
+<td>95</td><td>delaybuffer</td><td></td></tr>
 </tr>
 <tr>
-<td>96</td><td>bytemul</td><td></td></tr>
+<td>96</td><td>virtualdelaybuffer</td><td></td></tr>
 </tr>
 <tr>
-<td>97</td><td>flipflop</td><td></td></tr>
+<td>97</td><td>console</td><td></td></tr>
+</tr>
+<tr>
+<td>98</td><td>byteshl</td><td></td></tr>
+</tr>
+<tr>
+<td>99</td><td>byteshr</td><td></td></tr>
+</tr>
+<tr>
+<td>100</td><td>qwordconstant</td><td></td></tr>
+</tr>
+<tr>
+<td>101</td><td>qwordnot</td><td></td></tr>
+</tr>
+<tr>
+<td>102</td><td>qwordor</td><td></td></tr>
+</tr>
+<tr>
+<td>103</td><td>qwordand</td><td></td></tr>
+</tr>
+<tr>
+<td>104</td><td>qwordxor</td><td></td></tr>
+</tr>
+<tr>
+<td>105</td><td>qwordneg</td><td></td></tr>
+</tr>
+<tr>
+<td>106</td><td>qwordadd</td><td></td></tr>
+</tr>
+<tr>
+<td>107</td><td>qwordmul</td><td></td></tr>
+</tr>
+<tr>
+<td>108</td><td>qwordequal</td><td></td></tr>
+</tr>
+<tr>
+<td>109</td><td>qwordlessu</td><td></td></tr>
+</tr>
+<tr>
+<td>110</td><td>qwordlessi</td><td></td></tr>
+</tr>
+<tr>
+<td>111</td><td>qwordshl</td><td></td></tr>
+</tr>
+<tr>
+<td>112</td><td>qwordshr</td><td></td></tr>
+</tr>
+<tr>
+<td>113</td><td>qwordmux</td><td></td></tr>
+</tr>
+<tr>
+<td>114</td><td>qwordswitch</td><td></td></tr>
+</tr>
+<tr>
+<td>115</td><td>statebit</td><td></td></tr>
+</tr>
+<tr>
+<td>116</td><td>statebyte</td><td></td></tr>
+</tr>
+</table>
+<a name='type-tc-point'></a>
+<h2>Type: Point</h2>
+
+<table class="table">
+<tr><th>Offset</th><th>Size</th><th>ID</th><th>Type</th><th>Note</th></tr>
+<tr>
+<td>0</td>
+<td>...</td>
+<td>x</td>
+<td>s2le</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>...</td>
+<td>y</td>
+<td>s2le</td>
+<td></td>
 </tr>
 </table>
 <a name='type-tc-string'></a>
@@ -459,23 +557,84 @@
 <td></td>
 </tr>
 </table>
-<a name='type-tc-point'></a>
-<h2>Type: Point</h2>
+<a name='type-tc-circuit_path'></a>
+<h2>Type: CircuitPath</h2>
 
 <table class="table">
 <tr><th>Offset</th><th>Size</th><th>ID</th><th>Type</th><th>Note</th></tr>
 <tr>
 <td>0</td>
 <td>...</td>
-<td>x</td>
-<td>s1</td>
+<td>start</td>
+<td><a href="#type-tc-point">Point</a></td>
 <td></td>
 </tr>
 <tr>
-<td>1</td>
+<td>4</td>
 <td>...</td>
-<td>y</td>
-<td>s1</td>
+<td>body</td>
+<td><a href="#type-tc-circuit_segment">CircuitSegment</a></td>
+<td></td>
+</tr>
+</table>
+<a name='type-tc-circuit_segment'></a>
+<h2>Type: CircuitSegment</h2>
+
+<table class="table">
+<tr><th>Offset</th><th>Size</th><th>ID</th><th>Type</th><th>Note</th></tr>
+<tr>
+<td>0</td>
+<td>...</td>
+<td>direction</td>
+<td>b3</td>
+<td></td>
+</tr>
+<tr>
+<td>0:3</td>
+<td>...</td>
+<td>length</td>
+<td>b5</td>
+<td></td>
+</tr>
+</table>
+<a name='type-tc-circuit'></a>
+<h2>Type: Circuit</h2>
+
+<table class="table">
+<tr><th>Offset</th><th>Size</th><th>ID</th><th>Type</th><th>Note</th></tr>
+<tr>
+<td>0</td>
+<td>...</td>
+<td>permanent_id</td>
+<td>u8le</td>
+<td></td>
+</tr>
+<tr>
+<td>8</td>
+<td>...</td>
+<td>kind</td>
+<td>u1?CircuitKind</td>
+<td></td>
+</tr>
+<tr>
+<td>9</td>
+<td>...</td>
+<td>color</td>
+<td>u1</td>
+<td></td>
+</tr>
+<tr>
+<td>10</td>
+<td>...</td>
+<td>comment</td>
+<td><a href="#type-tc-string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td>???</td>
+<td>...</td>
+<td>path</td>
+<td><a href="#type-tc-circuit_path">CircuitPath</a></td>
 <td></td>
 </tr>
 </table>
@@ -499,21 +658,21 @@
 <td></td>
 </tr>
 <tr>
-<td>4</td>
+<td>6</td>
 <td>...</td>
 <td>rotation</td>
 <td>u1</td>
 <td></td>
 </tr>
 <tr>
-<td>5</td>
+<td>7</td>
 <td>...</td>
 <td>permanent_id</td>
-<td>u4le</td>
+<td>u8le</td>
 <td></td>
 </tr>
 <tr>
-<td>9</td>
+<td>15</td>
 <td>...</td>
 <td>custom_string</td>
 <td><a href="#type-tc-string">String</a></td>
@@ -531,54 +690,6 @@
 <td>...</td>
 <td>custom_id</td>
 <td>u8le</td>
-<td></td>
-</tr>
-</table>
-<a name='type-tc-circuit'></a>
-<h2>Type: Circuit</h2>
-
-<table class="table">
-<tr><th>Offset</th><th>Size</th><th>ID</th><th>Type</th><th>Note</th></tr>
-<tr>
-<td>0</td>
-<td>...</td>
-<td>permanent_id</td>
-<td>u4le</td>
-<td></td>
-</tr>
-<tr>
-<td>4</td>
-<td>...</td>
-<td>kind</td>
-<td>u1?CircuitKind</td>
-<td></td>
-</tr>
-<tr>
-<td>5</td>
-<td>...</td>
-<td>color</td>
-<td>u1</td>
-<td></td>
-</tr>
-<tr>
-<td>6</td>
-<td>...</td>
-<td>comment</td>
-<td><a href="#type-tc-string">String</a></td>
-<td></td>
-</tr>
-<tr>
-<td>???</td>
-<td>...</td>
-<td>path_length</td>
-<td>u8le</td>
-<td></td>
-</tr>
-<tr>
-<td>???</td>
-<td>...</td>
-<td>path</td>
-<td><a href="#type-tc-point">Point</a></td>
 <td></td>
 </tr>
 </table>

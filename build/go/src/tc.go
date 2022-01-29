@@ -28,8 +28,8 @@ const (
 	Tc_ComponentKind__Nor Tc_ComponentKind = 10
 	Tc_ComponentKind__Xor Tc_ComponentKind = 11
 	Tc_ComponentKind__Xnor Tc_ComponentKind = 12
-	Tc_ComponentKind__Counter Tc_ComponentKind = 13
-	Tc_ComponentKind__Virtualcounter Tc_ComponentKind = 14
+	Tc_ComponentKind__Bytecounter Tc_ComponentKind = 13
+	Tc_ComponentKind__Virtualbytecounter Tc_ComponentKind = 14
 	Tc_ComponentKind__Qwordcounter Tc_ComponentKind = 15
 	Tc_ComponentKind__Virtualqwordcounter Tc_ComponentKind = 16
 	Tc_ComponentKind__Ram Tc_ComponentKind = 17
@@ -47,9 +47,9 @@ const (
 	Tc_ComponentKind__Qwordregister Tc_ComponentKind = 29
 	Tc_ComponentKind__Virtualqwordregister Tc_ComponentKind = 30
 	Tc_ComponentKind__Byteswitch Tc_ComponentKind = 31
-	Tc_ComponentKind__Mux Tc_ComponentKind = 32
-	Tc_ComponentKind__Demux Tc_ComponentKind = 33
-	Tc_ComponentKind__Biggerdemux Tc_ComponentKind = 34
+	Tc_ComponentKind__Bytemux Tc_ComponentKind = 32
+	Tc_ComponentKind__Decoder1 Tc_ComponentKind = 33
+	Tc_ComponentKind__Decoder3 Tc_ComponentKind = 34
 	Tc_ComponentKind__Byteconstant Tc_ComponentKind = 35
 	Tc_ComponentKind__Bytenot Tc_ComponentKind = 36
 	Tc_ComponentKind__Byteor Tc_ComponentKind = 37
@@ -59,8 +59,8 @@ const (
 	Tc_ComponentKind__Bytelessu Tc_ComponentKind = 41
 	Tc_ComponentKind__Bytelessi Tc_ComponentKind = 42
 	Tc_ComponentKind__Byteneg Tc_ComponentKind = 43
-	Tc_ComponentKind__Byteadd2 Tc_ComponentKind = 44
-	Tc_ComponentKind__Bytemul2 Tc_ComponentKind = 45
+	Tc_ComponentKind__Byteadd Tc_ComponentKind = 44
+	Tc_ComponentKind__Bytemul Tc_ComponentKind = 45
 	Tc_ComponentKind__Bytesplitter Tc_ComponentKind = 46
 	Tc_ComponentKind__Bytemaker Tc_ComponentKind = 47
 	Tc_ComponentKind__Qwordsplitter Tc_ComponentKind = 48
@@ -74,8 +74,8 @@ const (
 	Tc_ComponentKind__Waveformgenerator Tc_ComponentKind = 56
 	Tc_ComponentKind__Httpclient Tc_ComponentKind = 57
 	Tc_ComponentKind__Asciiscreen Tc_ComponentKind = 58
-	Tc_ComponentKind__Keyboard Tc_ComponentKind = 59
-	Tc_ComponentKind__Fileinput Tc_ComponentKind = 60
+	Tc_ComponentKind__Keypad Tc_ComponentKind = 59
+	Tc_ComponentKind__Filerom Tc_ComponentKind = 60
 	Tc_ComponentKind__Halt Tc_ComponentKind = 61
 	Tc_ComponentKind__Circuitcluster Tc_ComponentKind = 62
 	Tc_ComponentKind__Screen Tc_ComponentKind = 63
@@ -109,10 +109,29 @@ const (
 	Tc_ComponentKind__Inputoutput Tc_ComponentKind = 91
 	Tc_ComponentKind__Custom Tc_ComponentKind = 92
 	Tc_ComponentKind__Virtualcustom Tc_ComponentKind = 93
-	Tc_ComponentKind__Byteless Tc_ComponentKind = 94
-	Tc_ComponentKind__Byteadd Tc_ComponentKind = 95
-	Tc_ComponentKind__Bytemul Tc_ComponentKind = 96
-	Tc_ComponentKind__Flipflop Tc_ComponentKind = 97
+	Tc_ComponentKind__Qwordprogram Tc_ComponentKind = 94
+	Tc_ComponentKind__Delaybuffer Tc_ComponentKind = 95
+	Tc_ComponentKind__Virtualdelaybuffer Tc_ComponentKind = 96
+	Tc_ComponentKind__Console Tc_ComponentKind = 97
+	Tc_ComponentKind__Byteshl Tc_ComponentKind = 98
+	Tc_ComponentKind__Byteshr Tc_ComponentKind = 99
+	Tc_ComponentKind__Qwordconstant Tc_ComponentKind = 100
+	Tc_ComponentKind__Qwordnot Tc_ComponentKind = 101
+	Tc_ComponentKind__Qwordor Tc_ComponentKind = 102
+	Tc_ComponentKind__Qwordand Tc_ComponentKind = 103
+	Tc_ComponentKind__Qwordxor Tc_ComponentKind = 104
+	Tc_ComponentKind__Qwordneg Tc_ComponentKind = 105
+	Tc_ComponentKind__Qwordadd Tc_ComponentKind = 106
+	Tc_ComponentKind__Qwordmul Tc_ComponentKind = 107
+	Tc_ComponentKind__Qwordequal Tc_ComponentKind = 108
+	Tc_ComponentKind__Qwordlessu Tc_ComponentKind = 109
+	Tc_ComponentKind__Qwordlessi Tc_ComponentKind = 110
+	Tc_ComponentKind__Qwordshl Tc_ComponentKind = 111
+	Tc_ComponentKind__Qwordshr Tc_ComponentKind = 112
+	Tc_ComponentKind__Qwordmux Tc_ComponentKind = 113
+	Tc_ComponentKind__Qwordswitch Tc_ComponentKind = 114
+	Tc_ComponentKind__Statebit Tc_ComponentKind = 115
+	Tc_ComponentKind__Statebyte Tc_ComponentKind = 116
 )
 type Tc struct {
 	Magic []byte
@@ -121,10 +140,13 @@ type Tc struct {
 	Delay uint32
 	CustomVisible uint8
 	ClockSpeed uint32
-	ScaleLevel uint8
+	NestingLevel uint8
 	DependcyCount uint64
 	Dependecies []uint64
 	Description *Tc_String
+	Unpacked uint8
+	CameraPosition *Tc_Point
+	CachedDesign uint8
 	ComponentCount uint64
 	Components []*Tc_Component
 	CircuitCount uint64
@@ -149,8 +171,8 @@ func (this *Tc) Read(io *kaitai.Stream, parent interface{}, root *Tc) (err error
 	}
 	tmp1 = tmp1
 	this.Magic = tmp1
-	if !(bytes.Equal(this.Magic, []uint8{0})) {
-		return kaitai.NewValidationNotEqualError([]uint8{0}, this.Magic, this._io, "/seq/0")
+	if !(bytes.Equal(this.Magic, []uint8{1})) {
+		return kaitai.NewValidationNotEqualError([]uint8{1}, this.Magic, this._io, "/seq/0")
 	}
 	tmp2, err := this._io.ReadS8le()
 	if err != nil {
@@ -181,7 +203,7 @@ func (this *Tc) Read(io *kaitai.Stream, parent interface{}, root *Tc) (err error
 	if err != nil {
 		return err
 	}
-	this.ScaleLevel = tmp7
+	this.NestingLevel = tmp7
 	tmp8, err := this._io.ReadU8le()
 	if err != nil {
 		return err
@@ -201,34 +223,79 @@ func (this *Tc) Read(io *kaitai.Stream, parent interface{}, root *Tc) (err error
 		return err
 	}
 	this.Description = tmp10
-	tmp11, err := this._io.ReadU8le()
+	tmp11, err := this._io.ReadU1()
 	if err != nil {
 		return err
 	}
-	this.ComponentCount = uint64(tmp11)
+	this.Unpacked = tmp11
+	tmp12 := NewTc_Point()
+	err = tmp12.Read(this._io, this, this._root)
+	if err != nil {
+		return err
+	}
+	this.CameraPosition = tmp12
+	tmp13, err := this._io.ReadU1()
+	if err != nil {
+		return err
+	}
+	this.CachedDesign = tmp13
+	tmp14, err := this._io.ReadU8le()
+	if err != nil {
+		return err
+	}
+	this.ComponentCount = uint64(tmp14)
 	this.Components = make([]*Tc_Component, this.ComponentCount)
 	for i := range this.Components {
-		tmp12 := NewTc_Component()
-		err = tmp12.Read(this._io, this, this._root)
+		tmp15 := NewTc_Component()
+		err = tmp15.Read(this._io, this, this._root)
 		if err != nil {
 			return err
 		}
-		this.Components[i] = tmp12
+		this.Components[i] = tmp15
 	}
-	tmp13, err := this._io.ReadU8le()
+	tmp16, err := this._io.ReadU8le()
 	if err != nil {
 		return err
 	}
-	this.CircuitCount = uint64(tmp13)
+	this.CircuitCount = uint64(tmp16)
 	this.Circuits = make([]*Tc_Circuit, this.CircuitCount)
 	for i := range this.Circuits {
-		tmp14 := NewTc_Circuit()
-		err = tmp14.Read(this._io, this, this._root)
+		tmp17 := NewTc_Circuit()
+		err = tmp17.Read(this._io, this, this._root)
 		if err != nil {
 			return err
 		}
-		this.Circuits[i] = tmp14
+		this.Circuits[i] = tmp17
 	}
+	return err
+}
+type Tc_Point struct {
+	X int16
+	Y int16
+	_io *kaitai.Stream
+	_root *Tc
+	_parent interface{}
+}
+func NewTc_Point() *Tc_Point {
+	return &Tc_Point{
+	}
+}
+
+func (this *Tc_Point) Read(io *kaitai.Stream, parent interface{}, root *Tc) (err error) {
+	this._io = io
+	this._parent = parent
+	this._root = root
+
+	tmp18, err := this._io.ReadS2le()
+	if err != nil {
+		return err
+	}
+	this.X = int16(tmp18)
+	tmp19, err := this._io.ReadS2le()
+	if err != nil {
+		return err
+	}
+	this.Y = int16(tmp19)
 	return err
 }
 type Tc_String struct {
@@ -248,53 +315,139 @@ func (this *Tc_String) Read(io *kaitai.Stream, parent interface{}, root *Tc) (er
 	this._parent = parent
 	this._root = root
 
-	tmp15, err := this._io.ReadU8le()
+	tmp20, err := this._io.ReadU8le()
 	if err != nil {
 		return err
 	}
-	this.Len = uint64(tmp15)
-	tmp16, err := this._io.ReadBytes(int(this.Len))
+	this.Len = uint64(tmp20)
+	tmp21, err := this._io.ReadBytes(int(this.Len))
 	if err != nil {
 		return err
 	}
-	tmp16 = tmp16
-	this.Content = string(tmp16)
+	tmp21 = tmp21
+	this.Content = string(tmp21)
 	return err
 }
-type Tc_Point struct {
-	X int8
-	Y int8
+type Tc_CircuitPath struct {
+	Start *Tc_Point
+	Body []*Tc_CircuitSegment
 	_io *kaitai.Stream
 	_root *Tc
-	_parent interface{}
+	_parent *Tc_Circuit
 }
-func NewTc_Point() *Tc_Point {
-	return &Tc_Point{
+func NewTc_CircuitPath() *Tc_CircuitPath {
+	return &Tc_CircuitPath{
 	}
 }
 
-func (this *Tc_Point) Read(io *kaitai.Stream, parent interface{}, root *Tc) (err error) {
+func (this *Tc_CircuitPath) Read(io *kaitai.Stream, parent *Tc_Circuit, root *Tc) (err error) {
 	this._io = io
 	this._parent = parent
 	this._root = root
 
-	tmp17, err := this._io.ReadS1()
+	tmp22 := NewTc_Point()
+	err = tmp22.Read(this._io, this, this._root)
 	if err != nil {
 		return err
 	}
-	this.X = tmp17
-	tmp18, err := this._io.ReadS1()
+	this.Start = tmp22
+	for i := 1;; i++ {
+		tmp23 := NewTc_CircuitSegment()
+		err = tmp23.Read(this._io, this, this._root)
+		if err != nil {
+			return err
+		}
+		_it := tmp23
+		this.Body = append(this.Body, _it)
+		if _it.Length == 0 {
+			break
+		}
+	}
+	return err
+}
+type Tc_CircuitSegment struct {
+	Direction uint64
+	Length uint64
+	_io *kaitai.Stream
+	_root *Tc
+	_parent *Tc_CircuitPath
+}
+func NewTc_CircuitSegment() *Tc_CircuitSegment {
+	return &Tc_CircuitSegment{
+	}
+}
+
+func (this *Tc_CircuitSegment) Read(io *kaitai.Stream, parent *Tc_CircuitPath, root *Tc) (err error) {
+	this._io = io
+	this._parent = parent
+	this._root = root
+
+	tmp24, err := this._io.ReadBitsIntBe(3)
 	if err != nil {
 		return err
 	}
-	this.Y = tmp18
+	this.Direction = tmp24
+	tmp25, err := this._io.ReadBitsIntBe(5)
+	if err != nil {
+		return err
+	}
+	this.Length = tmp25
+	return err
+}
+type Tc_Circuit struct {
+	PermanentId uint64
+	Kind Tc_CircuitKind
+	Color uint8
+	Comment *Tc_String
+	Path *Tc_CircuitPath
+	_io *kaitai.Stream
+	_root *Tc
+	_parent *Tc
+}
+func NewTc_Circuit() *Tc_Circuit {
+	return &Tc_Circuit{
+	}
+}
+
+func (this *Tc_Circuit) Read(io *kaitai.Stream, parent *Tc, root *Tc) (err error) {
+	this._io = io
+	this._parent = parent
+	this._root = root
+
+	tmp26, err := this._io.ReadU8le()
+	if err != nil {
+		return err
+	}
+	this.PermanentId = uint64(tmp26)
+	tmp27, err := this._io.ReadU1()
+	if err != nil {
+		return err
+	}
+	this.Kind = Tc_CircuitKind(tmp27)
+	tmp28, err := this._io.ReadU1()
+	if err != nil {
+		return err
+	}
+	this.Color = tmp28
+	tmp29 := NewTc_String()
+	err = tmp29.Read(this._io, this, this._root)
+	if err != nil {
+		return err
+	}
+	this.Comment = tmp29
+	tmp30 := NewTc_CircuitPath()
+	err = tmp30.Read(this._io, this, this._root)
+	if err != nil {
+		return err
+	}
+	this.Path = tmp30
 	return err
 }
 type Tc_Component struct {
 	Kind Tc_ComponentKind
 	Position *Tc_Point
 	Rotation uint8
-	PermanentId uint32
+	PermanentId uint64
 	CustomString *Tc_String
 	ProgramName *Tc_String
 	CustomId uint64
@@ -312,105 +465,47 @@ func (this *Tc_Component) Read(io *kaitai.Stream, parent *Tc, root *Tc) (err err
 	this._parent = parent
 	this._root = root
 
-	tmp19, err := this._io.ReadU2le()
+	tmp31, err := this._io.ReadU2le()
 	if err != nil {
 		return err
 	}
-	this.Kind = Tc_ComponentKind(tmp19)
-	tmp20 := NewTc_Point()
-	err = tmp20.Read(this._io, this, this._root)
+	this.Kind = Tc_ComponentKind(tmp31)
+	tmp32 := NewTc_Point()
+	err = tmp32.Read(this._io, this, this._root)
 	if err != nil {
 		return err
 	}
-	this.Position = tmp20
-	tmp21, err := this._io.ReadU1()
+	this.Position = tmp32
+	tmp33, err := this._io.ReadU1()
 	if err != nil {
 		return err
 	}
-	this.Rotation = tmp21
-	tmp22, err := this._io.ReadU4le()
+	this.Rotation = tmp33
+	tmp34, err := this._io.ReadU8le()
 	if err != nil {
 		return err
 	}
-	this.PermanentId = uint32(tmp22)
-	tmp23 := NewTc_String()
-	err = tmp23.Read(this._io, this, this._root)
+	this.PermanentId = uint64(tmp34)
+	tmp35 := NewTc_String()
+	err = tmp35.Read(this._io, this, this._root)
 	if err != nil {
 		return err
 	}
-	this.CustomString = tmp23
+	this.CustomString = tmp35
 	if ( (( ((this.Kind > 63) && (this.Kind < 69)) ) || (this.Kind == 94)) ) {
-		tmp24 := NewTc_String()
-		err = tmp24.Read(this._io, this, this._root)
+		tmp36 := NewTc_String()
+		err = tmp36.Read(this._io, this, this._root)
 		if err != nil {
 			return err
 		}
-		this.ProgramName = tmp24
+		this.ProgramName = tmp36
 	}
 	if (this.Kind == 92) {
-		tmp25, err := this._io.ReadU8le()
+		tmp37, err := this._io.ReadU8le()
 		if err != nil {
 			return err
 		}
-		this.CustomId = uint64(tmp25)
-	}
-	return err
-}
-type Tc_Circuit struct {
-	PermanentId uint32
-	Kind Tc_CircuitKind
-	Color uint8
-	Comment *Tc_String
-	PathLength uint64
-	Path []*Tc_Point
-	_io *kaitai.Stream
-	_root *Tc
-	_parent *Tc
-}
-func NewTc_Circuit() *Tc_Circuit {
-	return &Tc_Circuit{
-	}
-}
-
-func (this *Tc_Circuit) Read(io *kaitai.Stream, parent *Tc, root *Tc) (err error) {
-	this._io = io
-	this._parent = parent
-	this._root = root
-
-	tmp26, err := this._io.ReadU4le()
-	if err != nil {
-		return err
-	}
-	this.PermanentId = uint32(tmp26)
-	tmp27, err := this._io.ReadU1()
-	if err != nil {
-		return err
-	}
-	this.Kind = Tc_CircuitKind(tmp27)
-	tmp28, err := this._io.ReadU1()
-	if err != nil {
-		return err
-	}
-	this.Color = tmp28
-	tmp29 := NewTc_String()
-	err = tmp29.Read(this._io, this, this._root)
-	if err != nil {
-		return err
-	}
-	this.Comment = tmp29
-	tmp30, err := this._io.ReadU8le()
-	if err != nil {
-		return err
-	}
-	this.PathLength = uint64(tmp30)
-	this.Path = make([]*Tc_Point, this.PathLength)
-	for i := range this.Path {
-		tmp31 := NewTc_Point()
-		err = tmp31.Read(this._io, this, this._root)
-		if err != nil {
-			return err
-		}
-		this.Path[i] = tmp31
+		this.CustomId = uint64(tmp37)
 	}
 	return err
 }
