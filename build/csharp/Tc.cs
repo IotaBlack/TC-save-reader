@@ -261,13 +261,18 @@ namespace Kaitai
                         i++;
                     } while (!(M_.Length == 0));
                 }
+                if ( ((Body[Body.Count - 1].Direction == 1) && (Body[Body.Count - 1].Length == 0)) ) {
+                    _end = new Point(m_io, this, m_root);
+                }
             }
             private Point _start;
             private List<CircuitSegment> _body;
+            private Point _end;
             private Tc m_root;
             private Tc.Circuit m_parent;
             public Point Start { get { return _start; } }
             public List<CircuitSegment> Body { get { return _body; } }
+            public Point End { get { return _end; } }
             public Tc M_Root { get { return m_root; } }
             public Tc.Circuit M_Parent { get { return m_parent; } }
         }

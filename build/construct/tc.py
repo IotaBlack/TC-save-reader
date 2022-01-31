@@ -14,6 +14,7 @@ tc__string = Struct(
 tc__circuit_path = Struct(
 	'start' / LazyBound(lambda: tc__point),
 	'body' / RepeatUntil(lambda obj_, list_, this: obj_.length == 0, LazyBound(lambda: tc__circuit_segment)),
+	'end' / If( ((this.body[-1].direction == 1) and (this.body[-1].length == 0)) , LazyBound(lambda: tc__point)),
 )
 
 tc__circuit_segment = Struct(

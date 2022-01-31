@@ -226,6 +226,9 @@ function Tc.CircuitPath:_read()
     end
     i = i + 1
   end
+if  ((self.body[#self.body].direction == 1) and (self.body[#self.body].length == 0))  then
+  self.end = Tc.Point(self._io, self, self._root)
+end
 end
 
 

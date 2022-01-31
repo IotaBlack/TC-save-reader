@@ -346,6 +346,9 @@ var Tc = (function() {
         this.body.push(_);
         i++;
       } while (!(_.length == 0));
+      if ( ((this.body[this.body.length - 1].direction == 1) && (this.body[this.body.length - 1].length == 0)) ) {
+        this.end = new Point(this._io, this, this._root);
+      }
     }
 
     return CircuitPath;

@@ -185,9 +185,12 @@ types:
         type: circuit_segment
         repeat: until
         repeat-until: _.length == 0
+      - id: end
+        type: point
+        if: body.last.direction == 1 and body.last.length == 0
   circuit_segment:
     meta:
-      bit-endian: be
+     bit-endian: be
     seq:
       - id: direction
         type: b3

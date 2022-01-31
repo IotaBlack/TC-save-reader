@@ -224,12 +224,20 @@ public:
     private:
         std::unique_ptr<point_t> m_start;
         std::unique_ptr<std::vector<std::unique_ptr<circuit_segment_t>>> m_body;
+        std::unique_ptr<point_t> m_end;
+        bool n_end;
+
+    public:
+        bool _is_null_end() { end(); return n_end; };
+
+    private:
         tc_t* m__root;
         tc_t::circuit_t* m__parent;
 
     public:
         point_t* start() const { return m_start.get(); }
         std::vector<std::unique_ptr<circuit_segment_t>>* body() const { return m_body.get(); }
+        point_t* end() const { return m_end.get(); }
         tc_t* _root() const { return m__root; }
         tc_t::circuit_t* _parent() const { return m__parent; }
     };

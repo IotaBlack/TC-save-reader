@@ -211,6 +211,9 @@ class Tc(KaitaiStruct):
                 if _.length == 0:
                     break
                 i += 1
+            if  ((self.body[-1].direction == 1) and (self.body[-1].length == 0)) :
+                self.end = Tc.Point(self._io, self, self._root)
+
 
 
     class CircuitSegment(KaitaiStruct):

@@ -213,10 +213,14 @@ class Tc < Kaitai::Struct::Struct
         @body << _
         i += 1
       end until _.length == 0
+      if  ((body.last.direction == 1) && (body.last.length == 0)) 
+        @end = Point.new(@_io, self, @_root)
+      end
       self
     end
     attr_reader :start
     attr_reader :body
+    attr_reader :end
   end
   class CircuitSegment < Kaitai::Struct::Struct
     def initialize(_io, _parent = nil, _root = self)

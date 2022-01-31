@@ -57,6 +57,7 @@ digraph {
 				<TR><TD PORT="start_pos">0</TD><TD PORT="start_size">4</TD><TD>Point</TD><TD PORT="start_type">start</TD></TR>
 				<TR><TD PORT="body_pos">4</TD><TD PORT="body_size">1</TD><TD>CircuitSegment</TD><TD PORT="body_type">body</TD></TR>
 				<TR><TD COLSPAN="4" PORT="body__repeat">repeat until _.length == 0</TD></TR>
+				<TR><TD PORT="end_pos">...</TD><TD PORT="end_size">4</TD><TD>Point</TD><TD PORT="end_type">end</TD></TR>
 			</TABLE>>];
 		}
 		subgraph cluster__circuit_segment {
@@ -109,6 +110,7 @@ digraph {
 	circuit_path__seq:start_type -> point__seq [style=bold];
 	circuit_path__seq:body_type -> circuit_segment__seq [style=bold];
 	circuit_segment__seq:length_type -> circuit_path__seq:body__repeat [color="#404040"];
+	circuit_path__seq:end_type -> point__seq [style=bold];
 	circuit__seq:comment_type -> string__seq [style=bold];
 	circuit__seq:path_type -> circuit_path__seq [style=bold];
 	component__seq:position_type -> point__seq [style=bold];

@@ -139,6 +139,7 @@ tc_t::circuit_path_t::circuit_path_t(kaitai::kstream* p__io, tc_t::circuit_t* p_
     m__root = p__root;
     m_start = 0;
     m_body = 0;
+    m_end = 0;
 
     try {
         _read();
@@ -160,6 +161,11 @@ void tc_t::circuit_path_t::_read() {
             i++;
         } while (!(_->length() == 0));
     }
+    n_end = true;
+    if ( ((body()->back()->direction() == 1) && (body()->back()->length() == 0)) ) {
+        n_end = false;
+        m_end = new point_t(m__io, this, m__root);
+    }
 }
 
 tc_t::circuit_path_t::~circuit_path_t() {
@@ -175,6 +181,11 @@ void tc_t::circuit_path_t::_clean_up() {
             delete *it;
         }
         delete m_body; m_body = 0;
+    }
+    if (!n_end) {
+        if (m_end) {
+            delete m_end; m_end = 0;
+        }
     }
 }
 

@@ -131,11 +131,16 @@ namespace Tc {
                 $this->_m_body[] = $_;
                 $i++;
             } while (!($_->length() == 0));
+            if ( (($this->body()[count($this->body()) - 1]->direction() == 1) && ($this->body()[count($this->body()) - 1]->length() == 0)) ) {
+                $this->_m_end = new \Tc\Point($this->_io, $this, $this->_root);
+            }
         }
         protected $_m_start;
         protected $_m_body;
+        protected $_m_end;
         public function start() { return $this->_m_start; }
         public function body() { return $this->_m_body; }
+        public function end() { return $this->_m_end; }
     }
 }
 

@@ -224,12 +224,20 @@ public:
     private:
         point_t* m_start;
         std::vector<circuit_segment_t*>* m_body;
+        point_t* m_end;
+        bool n_end;
+
+    public:
+        bool _is_null_end() { end(); return n_end; };
+
+    private:
         tc_t* m__root;
         tc_t::circuit_t* m__parent;
 
     public:
         point_t* start() const { return m_start; }
         std::vector<circuit_segment_t*>* body() const { return m_body; }
+        point_t* end() const { return m_end; }
         tc_t* _root() const { return m__root; }
         tc_t::circuit_t* _parent() const { return m__parent; }
     };

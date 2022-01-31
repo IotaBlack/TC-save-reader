@@ -301,13 +301,18 @@ public class Tc extends KaitaiStruct {
                     i++;
                 } while (!(_it.length() == 0));
             }
+            if ( ((body().get(body().size() - 1).direction() == 1) && (body().get(body().size() - 1).length() == 0)) ) {
+                this.end = new Point(this._io, this, _root);
+            }
         }
         private Point start;
         private ArrayList<CircuitSegment> body;
+        private Point end;
         private Tc _root;
         private Tc.Circuit _parent;
         public Point start() { return start; }
         public ArrayList<CircuitSegment> body() { return body; }
+        public Point end() { return end; }
         public Tc _root() { return _root; }
         public Tc.Circuit _parent() { return _parent; }
     }

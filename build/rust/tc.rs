@@ -278,6 +278,7 @@ impl Tc__String {
 pub struct Tc__CircuitPath {
     pub start: Box<Tc__Point>,
     pub body: Vec<Box<Tc__CircuitSegment>>,
+    pub end: Box<Tc__Point>,
 }
 
 impl KaitaiStruct for Tc__CircuitPath {
@@ -308,6 +309,9 @@ impl KaitaiStruct for Tc__CircuitPath {
             self.body.append(Box::new(Tc__CircuitSegment::new(self.stream, self, _root)?));
             !(tmpa.length == 0)
         } { }
+        if  ((self.body.last().direction == 1) && (self.body.last().length == 0))  {
+            self.end = Box::new(Tc__Point::new(self.stream, self, _root)?);
+        }
     }
 }
 

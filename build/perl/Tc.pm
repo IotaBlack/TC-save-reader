@@ -397,6 +397,9 @@ sub _read {
         $_ = Tc::CircuitSegment->new($self->{_io}, $self, $self->{_root});
         push @{$self->{body}}, $_;
     } until ($_->length() == 0);
+    if ( ((@{$self->body()}[-1]->direction() == 1) && (@{$self->body()}[-1]->length() == 0)) ) {
+        $self->{end} = Tc::Point->new($self->{_io}, $self, $self->{_root});
+    }
 }
 
 sub start {
@@ -407,6 +410,11 @@ sub start {
 sub body {
     my ($self) = @_;
     return $self->{body};
+}
+
+sub end {
+    my ($self) = @_;
+    return $self->{end};
 }
 
 ########################################################################

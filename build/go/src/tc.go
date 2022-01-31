@@ -331,6 +331,7 @@ func (this *Tc_String) Read(io *kaitai.Stream, parent interface{}, root *Tc) (er
 type Tc_CircuitPath struct {
 	Start *Tc_Point
 	Body []*Tc_CircuitSegment
+	End *Tc_Point
 	_io *kaitai.Stream
 	_root *Tc
 	_parent *Tc_Circuit
@@ -363,6 +364,16 @@ func (this *Tc_CircuitPath) Read(io *kaitai.Stream, parent *Tc_Circuit, root *Tc
 			break
 		}
 	}
+	tmp24 := this.Body
+	tmp25 := this.Body
+	if ( ((tmp24[len(tmp24) - 1].Direction == 1) && (tmp25[len(tmp25) - 1].Length == 0)) ) {
+		tmp26 := NewTc_Point()
+		err = tmp26.Read(this._io, this, this._root)
+		if err != nil {
+			return err
+		}
+		this.End = tmp26
+	}
 	return err
 }
 type Tc_CircuitSegment struct {
@@ -382,16 +393,16 @@ func (this *Tc_CircuitSegment) Read(io *kaitai.Stream, parent *Tc_CircuitPath, r
 	this._parent = parent
 	this._root = root
 
-	tmp24, err := this._io.ReadBitsIntBe(3)
+	tmp27, err := this._io.ReadBitsIntBe(3)
 	if err != nil {
 		return err
 	}
-	this.Direction = tmp24
-	tmp25, err := this._io.ReadBitsIntBe(5)
+	this.Direction = tmp27
+	tmp28, err := this._io.ReadBitsIntBe(5)
 	if err != nil {
 		return err
 	}
-	this.Length = tmp25
+	this.Length = tmp28
 	return err
 }
 type Tc_Circuit struct {
@@ -414,33 +425,33 @@ func (this *Tc_Circuit) Read(io *kaitai.Stream, parent *Tc, root *Tc) (err error
 	this._parent = parent
 	this._root = root
 
-	tmp26, err := this._io.ReadU8le()
+	tmp29, err := this._io.ReadU8le()
 	if err != nil {
 		return err
 	}
-	this.PermanentId = uint64(tmp26)
-	tmp27, err := this._io.ReadU1()
+	this.PermanentId = uint64(tmp29)
+	tmp30, err := this._io.ReadU1()
 	if err != nil {
 		return err
 	}
-	this.Kind = Tc_CircuitKind(tmp27)
-	tmp28, err := this._io.ReadU1()
+	this.Kind = Tc_CircuitKind(tmp30)
+	tmp31, err := this._io.ReadU1()
 	if err != nil {
 		return err
 	}
-	this.Color = tmp28
-	tmp29 := NewTc_String()
-	err = tmp29.Read(this._io, this, this._root)
+	this.Color = tmp31
+	tmp32 := NewTc_String()
+	err = tmp32.Read(this._io, this, this._root)
 	if err != nil {
 		return err
 	}
-	this.Comment = tmp29
-	tmp30 := NewTc_CircuitPath()
-	err = tmp30.Read(this._io, this, this._root)
+	this.Comment = tmp32
+	tmp33 := NewTc_CircuitPath()
+	err = tmp33.Read(this._io, this, this._root)
 	if err != nil {
 		return err
 	}
-	this.Path = tmp30
+	this.Path = tmp33
 	return err
 }
 type Tc_Component struct {
@@ -465,47 +476,47 @@ func (this *Tc_Component) Read(io *kaitai.Stream, parent *Tc, root *Tc) (err err
 	this._parent = parent
 	this._root = root
 
-	tmp31, err := this._io.ReadU2le()
+	tmp34, err := this._io.ReadU2le()
 	if err != nil {
 		return err
 	}
-	this.Kind = Tc_ComponentKind(tmp31)
-	tmp32 := NewTc_Point()
-	err = tmp32.Read(this._io, this, this._root)
-	if err != nil {
-		return err
-	}
-	this.Position = tmp32
-	tmp33, err := this._io.ReadU1()
-	if err != nil {
-		return err
-	}
-	this.Rotation = tmp33
-	tmp34, err := this._io.ReadU8le()
-	if err != nil {
-		return err
-	}
-	this.PermanentId = uint64(tmp34)
-	tmp35 := NewTc_String()
+	this.Kind = Tc_ComponentKind(tmp34)
+	tmp35 := NewTc_Point()
 	err = tmp35.Read(this._io, this, this._root)
 	if err != nil {
 		return err
 	}
-	this.CustomString = tmp35
+	this.Position = tmp35
+	tmp36, err := this._io.ReadU1()
+	if err != nil {
+		return err
+	}
+	this.Rotation = tmp36
+	tmp37, err := this._io.ReadU8le()
+	if err != nil {
+		return err
+	}
+	this.PermanentId = uint64(tmp37)
+	tmp38 := NewTc_String()
+	err = tmp38.Read(this._io, this, this._root)
+	if err != nil {
+		return err
+	}
+	this.CustomString = tmp38
 	if ( (( ((this.Kind > 63) && (this.Kind < 69)) ) || (this.Kind == 94)) ) {
-		tmp36 := NewTc_String()
-		err = tmp36.Read(this._io, this, this._root)
+		tmp39 := NewTc_String()
+		err = tmp39.Read(this._io, this, this._root)
 		if err != nil {
 			return err
 		}
-		this.ProgramName = tmp36
+		this.ProgramName = tmp39
 	}
 	if (this.Kind == 92) {
-		tmp37, err := this._io.ReadU8le()
+		tmp40, err := this._io.ReadU8le()
 		if err != nil {
 			return err
 		}
-		this.CustomId = uint64(tmp37)
+		this.CustomId = uint64(tmp40)
 	}
 	return err
 }

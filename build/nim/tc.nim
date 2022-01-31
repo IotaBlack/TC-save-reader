@@ -154,6 +154,7 @@ type
   Tc_CircuitPath* = ref object of KaitaiStruct
     `start`*: Tc_Point
     `body`*: seq[Tc_CircuitSegment]
+    `end`*: Tc_Point
     `parent`*: Tc_Circuit
   Tc_CircuitSegment* = ref object of KaitaiStruct
     `direction`*: uint64
@@ -284,6 +285,9 @@ proc read*(_: typedesc[Tc_CircuitPath], io: KaitaiStream, root: KaitaiStruct, pa
       if it.length == 0:
         break
       inc i
+  if  ((this.body[^1].direction == 1) and (this.body[^1].length == 0)) :
+    let endExpr = Tc_Point.read(this.io, this.root, this)
+    this.end = endExpr
 
 proc fromFile*(_: typedesc[Tc_CircuitPath], filename: string): Tc_CircuitPath =
   Tc_CircuitPath.read(newKaitaiFileStream(filename), nil, nil)

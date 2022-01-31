@@ -100,6 +100,7 @@ tc_t::circuit_path_t::circuit_path_t(kaitai::kstream* p__io, tc_t::circuit_t* p_
     m__root = p__root;
     m_start = nullptr;
     m_body = nullptr;
+    m_end = nullptr;
     _read();
 }
 
@@ -115,6 +116,11 @@ void tc_t::circuit_path_t::_read() {
             i++;
         } while (!(_->length() == 0));
     }
+    n_end = true;
+    if ( ((body()->back()->direction() == 1) && (body()->back()->length() == 0)) ) {
+        n_end = false;
+        m_end = std::unique_ptr<point_t>(new point_t(m__io, this, m__root));
+    }
 }
 
 tc_t::circuit_path_t::~circuit_path_t() {
@@ -122,6 +128,8 @@ tc_t::circuit_path_t::~circuit_path_t() {
 }
 
 void tc_t::circuit_path_t::_clean_up() {
+    if (!n_end) {
+    }
 }
 
 tc_t::circuit_segment_t::circuit_segment_t(kaitai::kstream* p__io, tc_t::circuit_path_t* p__parent, tc_t* p__root) : kaitai::kstruct(p__io) {
